@@ -1,3 +1,11 @@
+# escape VERSION 2.2.4
+
+## UNDERLYING CHANGES
+
+* moved dependency from msigdbr to msigdb
+* ```getGeneSets()``` now locally caches the gene sets to improve speed of repeated use
+* ```getGeneSets()``` now only supports Mouse or Human
+
 # escape VERSION 2.2.3
 
 ## UNDERLYING CHANGES
