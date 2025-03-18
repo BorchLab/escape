@@ -25,7 +25,7 @@ Imports:
     GSVA,
     SingleCellExperiment,
     ggridges,
-    msigdbr,
+    msigdb,
     stats,
     reshape2,
     patchwork,

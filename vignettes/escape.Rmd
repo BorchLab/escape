@@ -48,16 +48,20 @@ sce.pbmc <- as.SingleCellExperiment(pbmc_small, assay = "RNA")
 
 ## Option 1: Molecular Signature Database
 
-The first step in the process of performing gene set enrichment analysis is identifying the gene sets we would like to use. The function `getGeneSets()` allows users to isolate a whole or multiple libraries from a list of GSEABase GeneSetCollection objects. 
+Gene set enrichment analysis begins by identifying the appropriate gene sets for your study. The ```getGeneSets()``` function simplifies this process by extracting one or more gene set libraries from the Molecular Signature Database (MSigDB) and returning them as a GSEABase GeneSetCollection object. Note that the first time you run ```getGeneSets()```, it downloads a complete local copy of the gene sets, which may take a little while. Future calls will use the cached version, greatly improving performance.
 
-We can do this for gene set collections from the built-in [Molecular Signature Database](https://www.gsea-msigdb.org/gsea/msigdb/search.jsp) by setting the parameter **library** equal to library/libraries of interest. For multiple libraries, just set **library = c("Library1", "Library2", etc)**. 
+To retrieve gene set collections from MSigDB, specify the library or libraries of interest using the library parameter. For example, to select multiple libraries, use:
 
-Additional parameters include: 
+```{r eval=FALSE, include=FALSE}
+gs <- getGeneSets(library = c("Library1", "Library2"))
+```
 
-* **subcategory** Can be used to select subcategories in the larger database.  
-* **gene.sets** Can select individual pathways/gene sets to be isolated.  
+In addition, the function supports further subsetting through these parameters:
 
-If the sequencing of the single-cell data is performed on a species other than "Homo sapiens", make sure to use the **species** parameter in `getGeneSets()` in order to get the correct gene nomenclature.
+* **subcategory**: Narrow down your selection by specifying subcategories within a library. Examples include "CGN", "CGP", "CP:BIOCARTA", "CP:KEGG", "GO:BP", "IMMUNESIGDB", etc.
+* **gene.sets:** Isolate individual pathways or gene sets by providing their specific names.
+
+If your data comes from a species other than Homo sapiens, be sure to use the species parameter (e.g., "Mus musculus") to ensure the correct gene nomenclature is applied.
 
 ```{r}
 GS.hallmark <- getGeneSets(library = "H")
@@ -89,6 +93,7 @@ This method calculates the enrichment score using a rank-normalized approach and
 $$
 ES(G,S) \sum_{i = 1}^{n} [P_W^G(G,S,i)-P_{NG}(G,S,i)]
 $$
+
 Please see the following [citation](https://pubmed.ncbi.nlm.nih.gov/19847166/) for more information.
 
 ### **GSVA**
@@ -98,6 +103,7 @@ GSVA varies slightly by estimating a Poisson-based kernel cumulative density fun
 $$
 ES_{jk}^{max} = V_{jk} [max_{l=1,...,p}|v_{jk}(l)]
 $$
+
 Please see the following [citation](https://pubmed.ncbi.nlm.nih.gov/23323831/) for more information.
 
 ### **AUCell**
@@ -118,7 +124,6 @@ $$
 
 
 Please see the following [citation](https://pubmed.ncbi.nlm.nih.gov/34285779/) for more information.
-
 
 ## escape.matrix
 
@@ -192,6 +197,7 @@ sce.pbmc <- runEscape(sce.pbmc,
                       min.size = 5,
                       new.assay.name = "escape.UCell")
 ```
+
 We can quickly examine the attached enrichment scores using the visualization/workflow we prefer - here we will use just `FeaturePlot()` from the Seurat R package. 
 
 ```{r tidy = FALSE}
@@ -242,6 +248,7 @@ heatmapEnrichment(pbmc_small,
                   gene.set.use = "all",
                   assay = "escape.ssGSEA")
 ```
+
 Most of the visualizations in *escape* have a defined set of parameters.
 
 **group.by**
@@ -316,6 +323,7 @@ geyserEnrichment(pbmc_small,
                  gene.set = "HALLMARK-INTERFERON-GAMMA-RESPONSE", 
                  facet.by = "groups")
 ```
+
 Lastly, we can select the way the color is applied to the plot using the **color.by** parameter. Here we can set it to the gene set of interest *"HALLMARK-INTERFERON-GAMMA-RESPONSE"*.
 
 ```{r}
@@ -334,6 +342,7 @@ ridgeEnrichment(sce.pbmc,
                 assay = "escape.UCell",
                 gene.set = "HALLMARK-IL2-STAT5-SIGNALING")
 ```
+
 We can get the relative position of individual cells along the x-axis using the **add.rug** parameter.
 
 ```{r}
@@ -376,7 +385,6 @@ densityEnrichment(pbmc_small,
 ## scatterEnrichment
 
 It may be advantageous to look at the distribution of multiple gene sets - here we can use ```scatterEnrichment()``` for a 2 gene set comparison. The color values are based on the density of points determined by the number of neighbors, similar to the [Nebulosa R package](https://www.bioconductor.org/packages/release/bioc/html/Nebulosa.html). We just need to define which gene set to plot on the **x.axis** and which to plot on the **y.axis**.
-
 
 ```{r}
 scatterEnrichment(pbmc_small, 
@@ -458,7 +466,7 @@ head(all.markers)
 
 # Conclusions
 
-If you have any questions, comments or suggestions, feel free to visit the [github repository](https://github.com/ncborcherding/escape) or [email me](mailto:ncborch@gmail.com).
+If you have any questions, comments or suggestions, feel free to visit the [github repository](https://github.com/ncborcherding/escape).
 
 ```{r}
 sessionInfo()

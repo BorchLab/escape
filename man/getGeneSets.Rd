@@ -2,40 +2,51 @@
 % Please edit documentation in R/getGeneSets.R
 \name{getGeneSets}
 \alias{getGeneSets}
-\title{Get a collection of gene sets to perform enrichment on}
+\title{Get a collection of gene sets from the msigdb}
 \usage{
 getGeneSets(
   species = "Homo sapiens",
   library = NULL,
   subcategory = NULL,
-  gene.sets = NULL
+  gene.sets = NULL,
+  version = "7.4",
+  id = "SYM"
 )
 }
 \arguments{
-\item{species}{The scientific name of the species of interest in 
-order to get correct gene nomenclature}
+\item{species}{The scientific name of the species of interest; only 
+"Homo sapiens" or "Mus musculus" are supported.}
 
-\item{library}{Individual collection(s) of gene sets, e.g. c("H", "C5").
-See \href{https://www.gsea-msigdb.org/gsea/msigdb/collections.jsp}{msigdbr}for
-all MSigDB collections.}
+\item{library}{A character vector of main collections (e.g. "H", "C5"). 
+If provided, only gene sets in these collections are returned.}
 
-\item{subcategory}{MSigDB sub-collection abbreviation, such as CGP or BP.}
+\item{subcategory}{A character vector specifying sub-collection abbreviations 
+(e.g. "CGP", "CP:REACTOME") to further subset the gene sets.}
 
-\item{gene.sets}{Select gene sets or pathways, using specific names, 
-example: pathways = c("HALLMARK_TNFA_SIGNALING_VIA_NFKB"). Will only be
-honored if library is set, too.}
+\item{gene.sets}{A character vector of specific gene set names to select. 
+This filter is applied after other subsetting.}
+
+\item{version}{The version of MSigDB to use (default "7.4").}
+
+\item{id}{The gene identifier type to use (default "SYM" for gene symbols).}
 }
 \value{
-A list of gene sets from msigdbr.
+A named list of gene identifiers for each gene set.
 }
 \description{
-This function allows users to select libraries and specific 
-gene.sets to form a GeneSetCollection that is a list of gene sets.
+This function retrieves gene sets from msigdb and caches the downloaded object 
+for future calls. It allows subsetting by main collection (library), 
+subcollection, or specific gene sets, and only supports human 
+("Homo sapiens") and mouse ("Mus musculus").
 }
 \examples{
-GS <- getGeneSets(library = "H")
+# Get all hallmark gene sets from human.
+gs <- getGeneSets(species = "Homo sapiens", 
+                  library = "H")
 
-}
-\author{
-Nick Borcherding, Jared Andrews
+# Get a subset based on main collection and subcollection.
+gs <- getGeneSets(species = "Homo sapiens", 
+                  library = c("C2", "C5"), 
+                  subcategory = "GO:BP")
+
 }
