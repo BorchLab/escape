@@ -40,6 +40,7 @@ subcollection, or specific gene sets, and only supports human
 ("Homo sapiens") and mouse ("Mus musculus").
 }
 \examples{
+\dontrun{
 # Get all hallmark gene sets from human.
 gs <- getGeneSets(species = "Homo sapiens", 
                   library = "H")
@@ -48,5 +49,5 @@ gs <- getGeneSets(species = "Homo sapiens",
 gs <- getGeneSets(species = "Homo sapiens", 
                   library = c("C2", "C5"), 
                   subcategory = "GO:BP")
-
+}
 }
