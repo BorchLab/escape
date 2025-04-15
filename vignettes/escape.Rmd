@@ -77,7 +77,7 @@ gene.sets <- escape.gene.sets
 ## Option 3: Define personal gene sets
 
 ```{r, eval=FALSE, tidy=FALSE}
-gene.sets <- list(Bcells = c("MS4A1","CD79B","CD79A","IGH1","IGH2")
+gene.sets <- list(Bcells = c("MS4A1","CD79B","CD79A","IGH1","IGH2"),
 			            Myeloid = c("SPI1","FCER1G","CSF1R"),
 			            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 ```

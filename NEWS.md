@@ -1,3 +1,11 @@
+# escape VERSION 2.4.1
+
+Version bump to be consistent with Bioconductor release
+
+## UNDERLYING CHANGES
+
+* Automatically remove gene sets with 0 in ```escape.matrix()```
+
 # escape VERSION 2.2.4
 
 ## UNDERLYING CHANGES

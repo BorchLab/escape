@@ -54,7 +54,7 @@ escape.matrix <- function(input.data,
     cnts <- .cntEval(input.data, assay = "RNA", type = "counts")
     egc.size <- lapply(egc, function(x) length(which(rownames(cnts) %in% x)))
     if (!is.null(min.size)){
-      remove <- unname(which(egc.size < min.size))
+      remove <- unname(which(egc.size < min.size | egc.size == 0))
       if(length(remove) > 0) {
         egc <- egc[-remove]
         egc.size <- egc.size[-remove]
