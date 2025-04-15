@@ -53,14 +53,19 @@ escape.matrix <- function(input.data,
     egc <- .GS.check(gene.sets)
     cnts <- .cntEval(input.data, assay = "RNA", type = "counts")
     egc.size <- lapply(egc, function(x) length(which(rownames(cnts) %in% x)))
-    if (!is.null(min.size)){
-      remove <- unname(which(egc.size < min.size | egc.size == 0))
-      if(length(remove) > 0) {
-        egc <- egc[-remove]
-        egc.size <- egc.size[-remove]
-        if(length(egc) == 0) {
-          stop("No gene sets passed the minimum length - please reconsider the 'min.size' parameter")
-        }
+    
+    # Filtering gene sets
+    if (!is.null(min.size)) {
+      remove <- which(egc.size < min.size | egc.size == 0)
+    } else {
+      remove <- which(egc.size == 0)
+    }
+    if (length(remove) > 0) {
+      egc <- egc[-remove]
+      egc.size <- egc.size[-remove]
+      
+      if (!is.null(min.size) && length(egc) == 0) {
+        stop("No gene sets passed the minimum length - please reconsider the 'min.size' parameter")
       }
     }
     
@@ -72,6 +77,7 @@ escape.matrix <- function(input.data,
     
     all_gene_sets <- names(egc) # Collect all gene set names
     
+    # Running enrichment calculation
     for (i in seq_along(splits)) {
       if (method == "GSVA") {
         parameters <- .gsva.setup(split.data[[i]], egc)
@@ -110,7 +116,7 @@ escape.matrix <- function(input.data,
     scores <- do.call(cbind, scores)
     output <- t(as.matrix(scores))
     
-    #Normalize based on dropout
+    # Normalize based on dropout
     if(normalize) {
       output <- performNormalization(sc.data = input.data,
                                      enrichment.data = output,
