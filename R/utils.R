@@ -1,304 +1,270 @@
-"%!in%" <- Negate("%in%")
+# -----------------------------------------------------------------------------
+#  FAST NEGATION OPERATOR ------------------------------------------------------
+# -----------------------------------------------------------------------------
+`%!in%` <- Negate(`%in%`)     
 
-is_seurat_object <- function(obj) inherits(obj, "Seurat")
-is_se_object <- function(obj) inherits(obj, "SummarizedExperiment")
-is_seurat_or_se_object <- function(obj) {
-  is_seurat_object(obj) || is_se_object(obj)
+# -----------------------------------------------------------------------------
+#  CLASS HELPERS ---------------------------------------------------------------
+# -----------------------------------------------------------------------------
+.is_seurat      <- function(x) inherits(x, "Seurat")
+.is_sce         <- function(x) inherits(x, "SummarizedExperiment")
+.is_seurat_or_sce <- function(x) .is_seurat(x) || .is_sce(x)
+
+.checkSingleObject <- function(obj) {
+  if (!.is_seurat_or_sce(obj))
+    stop("Expecting a Seurat or SummarizedExperiment object")
 }
 
-.checkSingleObject <- function(sc) {
-  if (!inherits(x=sc, what ="Seurat") & 
-      !inherits(x=sc, what ="SummarizedExperiment")){
-    stop("Object indicated is not of class 'Seurat' or 
-            'SummarizedExperiment', make sure you are using
-            the correct data.") }
+# -----------------------------------------------------------------------------
+#  ORDERING UTILITY (base R implementation) -----------------------------------
+# -----------------------------------------------------------------------------
+.orderFunction <- function(dat, order.by, group.by) {
+  if (!(order.by %in% c("mean", "group.by")))
+    stop("order.by must be 'mean' or 'group.by'")
+  
+  if (order.by == "mean") {
+    means <- tapply(dat[[1]], dat[[group.by]], mean, simplify = TRUE)
+    lev   <- names(sort(means, decreasing = TRUE))
+    dat[[group.by]] <- factor(dat[[group.by]], levels = lev)
+  } else {                              # natural sort of group labels
+    if (requireNamespace("stringr", quietly = TRUE)) {
+      lev <- stringr::str_sort(unique(dat[[group.by]]), numeric = TRUE)
+    } else {
+      lev <- sort(unique(dat[[group.by]]), method = "radix")
+    }
+    dat[[group.by]] <- factor(dat[[group.by]], levels = lev)
+  }
+  dat
 }
 
-#' @importFrom dplyr group_by summarise_at
-#' @importFrom stringr str_sort
-.orderFunction <- function(dat, order.by, group.by){
-  if(order.by %!in% c("mean", "group.by")) {
-    stop(paste0("Please select either 'mean' or 'group.by' for ordering."))
-  }
-  if(order.by == "mean") {
-    summary <- dat %>%
-                  group_by(dat[,group.by]) %>%
-                  summarise_at(.vars = colnames(.)[1], mean) %>%
-                  as.data.frame()
-    summary <- summary[order(summary[,2], decreasing = TRUE),]
-    dat[,group.by] <- factor(dat[,group.by], levels = summary[,1])
-  }
-  else if (order.by == "group.by") {
-    dat[,group.by] <- factor(dat[,group.by], str_sort(unique(dat[,group.by]), numeric = TRUE))
-  }
-  return(dat)
-}
-
-.makeDFfromSCO <- function(input.data, 
-                           assay = "escape", 
-                           gene.set = NULL,
-                           group.by = NULL, 
-                           split.by = NULL, 
-                           facet.by = NULL) {
-  if(is.null(assay)){
-    stop("Please add the assay name in which to plot from")
-  }
-  columns <- unique(c(group.by, split.by, facet.by))
-  cnts <- .cntEval(input.data, 
-                   assay = assay, 
-                   type = "data")
-  if(length(gene.set) == 1 && gene.set == "all") {
+# -----------------------------------------------------------------------------
+#  DATA.frame BUILDERS ---------------------------------------------------------
+# -----------------------------------------------------------------------------
+.makeDFfromSCO <- function(input.data, assay = "escape", gene.set = NULL,
+                           group.by = NULL, split.by = NULL, facet.by = NULL) {
+  if (is.null(assay))
+    stop("Please provide assay name")
+  cols <- unique(c(group.by, split.by, facet.by))
+  cnts <- .cntEval(input.data, assay = assay, type = "data")
+  
+  if (length(gene.set) == 1 && gene.set == "all")
     gene.set <- rownames(cnts)
-  }
+  
   meta <- .grabMeta(input.data)
-  if(length(gene.set) == 1) {
-    enriched <- data.frame(cnts[gene.set,], meta[,columns])
+  meta <- meta[, cols, drop = FALSE]
+  
+  if (length(gene.set) == 1) {
+    df <- cbind(value = cnts[gene.set, ], meta)
+    colnames(df)[1] <- gene.set
   } else {
-    enriched <- data.frame(t(cnts[gene.set,]), meta[,columns])
+    df <- cbind(t(cnts[gene.set, , drop = FALSE]), meta)
   }
-  colnames(enriched) <- c(gene.set, columns)
-  return(enriched)
+  df
 }
 
-#Prepare Data
 .prepData <- function(input.data, assay, gene.set, group.by, split.by, facet.by) {
+  if (.is_seurat_or_sce(input.data)) {
+    df <- .makeDFfromSCO(input.data, assay, gene.set, group.by, split.by, facet.by)
+    if (identical(gene.set, "all")) {
+      gene.set <- setdiff(colnames(df), c(group.by, split.by, facet.by))
+    }
+  } else {                               # assume plain data.frame / matrix
+    if (identical(gene.set, "all"))
+      gene.set <- setdiff(colnames(input.data), c(group.by, split.by, facet.by))
+    df <- input.data[, c(gene.set, group.by, split.by, facet.by), drop = FALSE]
+  }
+  colnames(df) <- c(gene.set, group.by, split.by, facet.by)
+  df
+}
+
+# -----------------------------------------------------------------------------
+#  COLOUR SCALES (ggplot helper; tidy‑agnostic) --------------------------------
+# -----------------------------------------------------------------------------
+.colorizer <- function(palette = "inferno", n = NULL) {
+  grDevices::hcl.colors(n = n, palette = palette, fixup = TRUE)
+}
+
+.colorby <- function(enriched, plot, color.by, palette, type = "fill") {
+  vec <- enriched[[color.by]]
+  is_num <- is.numeric(vec)
+  if (!is_num && requireNamespace("stringr", quietly = TRUE))
+    lev <- stringr::str_sort(unique(vec), numeric = TRUE) else lev <- unique(vec)
   
-  if (inherits(x=input.data, what ="Seurat") || 
-      inherits(x=input.data, what ="SummarizedExperiment")) {
-    enriched <- .makeDFfromSCO(input.data, assay, gene.set, group.by, split.by, facet.by)
-    if(length(gene.set) == 1 && gene.set == "all") {
-      gene.set <- colnames(enriched)[colnames(enriched) %!in% c(group.by, split.by, facet.by)]
-      gene.set <- gene.set[!grepl("meta", gene.set)]
-    }
-  } else if (!is_seurat_or_se_object(input.data)) {
-    if(length(gene.set) == 1 && gene.set == "all") {
-      gene.set <- colnames(input.data)
-      gene.set <- gene.set[gene.set %!in% c(group.by, split.by, facet.by)]
-    } 
-      enriched <- data.frame(input.data[,c(gene.set,group.by, split.by, facet.by)])
-    }
-    
-  colnames(enriched) <- c(gene.set, group.by, split.by, facet.by)
-  return(enriched)
-}
-
-#' @importFrom stringr str_sort
-.colorby <- function(enriched,
-                     plot, 
-                     color.by,
-                     palette, 
-                     type = "fill") { 
-  if (inherits(enriched[,color.by], c("factor", "character"))) {
-    grouping <- str_sort(unique(enriched[,color.by]), numeric = TRUE)
+  pal_fun <- switch(type,
+                    fill   = ggplot2::scale_fill_manual,
+                    color  = ggplot2::scale_color_manual)
+  grad_fun <- switch(type,
+                     fill   = ggplot2::scale_fill_gradientn,
+                     color  = ggplot2::scale_color_gradientn)
+  if (is_num) {
+    plot + grad_fun(colors = .colorizer(palette, 11), aesthetics = type) +
+      labs(**setNames(list(color.by), type))
+  } else {
+    pal <- .colorizer(palette, length(lev)); names(pal) <- lev
+    plot + pal_fun(values = pal) + labs(**setNames(list(color.by), type))
   }
-
-  if(type == "fill") {
-    if(inherits(enriched[,color.by], "numeric")) {
-      plot <- plot +
-              scale_fill_gradientn(colors = .colorizer(palette, 11)) + 
-              labs(fill = color.by) 
-    } else {
-      col <- length(unique(enriched[,color.by]))
-      col.pal <- .colorizer(palette, col)
-      names(col.pal) <- grouping
-      plot <- plot + 
-              scale_fill_manual(values = col.pal) +
-              labs(fill = color.by) 
-    }
-  } else if (type == "color") {
-    if(inherits(enriched[,color.by], "numeric")) {
-      plot <- plot +
-              scale_color_gradientn(colors = .colorizer(palette, 11)) + 
-              labs(color = color.by) 
-    } else {
-      col <- length(unique(enriched[,color.by]))
-      col.pal <- .colorizer(palette, col)
-      names(col.pal) <- grouping
-      plot <- plot + 
-              scale_color_manual(values = col.pal) +
-              labs(color = color.by) 
-    }
-  }
-  return(plot)
 }
 
-
-#Pulling a color palette for visualizations
-#' @importFrom grDevices hcl.colors
-#' @keywords internal
-.colorizer <- function(palette = "inferno", 
-                       n= NULL) {
-  colors <- hcl.colors(n=n, palette = palette, fixup = TRUE)
-  return(colors)
+# -----------------------------------------------------------------------------
+#  MATRIX / VECTOR SPLITTERS ---------------------------------------------------
+# -----------------------------------------------------------------------------
+.split_cols <- function(mat, chunk) {
+  if (ncol(mat) <= chunk) return(list(mat))
+  idx <- split(seq_len(ncol(mat)), ceiling(seq_len(ncol(mat)) / chunk))
+  lapply(idx, function(i) mat[, i, drop = FALSE])
 }
 
-#split data matrix into cell chunks
-#modified this from https://github.com/carmonalab/UCell
-.split_data.matrix <- function(matrix, chunk.size = 1000) {
-  ncols <- dim(matrix)[2]
-  nchunks <- ceiling(ncols / chunk.size)  # Total number of chunks
-  
-  split.data <- vector("list", nchunks)  # Preallocate list for efficiency
-  for (i in seq_len(nchunks)) {
-    min <- (i - 1) * chunk.size + 1
-    max <- min(i * chunk.size, ncols)
-    split.data[[i]] <- matrix[, min:max, drop = FALSE]  # Ensure consistent structure
-  }
-  return(split.data)
+.split_rows <- function(mat, chunk.size = 1000) {
+  if (is.vector(mat)) mat <- matrix(mat, ncol = 1)
+  idx <- split(seq_len(nrow(mat)), ceiling(seq_len(nrow(mat)) / chunk.size))
+  lapply(idx, function(i) mat[i, , drop = FALSE])
 }
 
-#' @importFrom SummarizedExperiment assays assays<-
-#' @importFrom MatrixGenerics rowSums2
-.cntEval <- function(obj, 
-                     assay = "RNA", 
-                     type = "counts") {
-  if (inherits(x = obj, what = "Seurat")) {
-    cnts <- obj@assays[[assay]][type]
-  } else if (inherits(x = obj, what = "SingleCellExperiment")) {
-    pos <- ifelse(assay == "RNA", "counts", assay) 
-    if(assay == "RNA") {
-      cnts <- assay(obj,pos)
+.split_vector <- function(vec, chunk.size = 1000) {
+  split(vec, ceiling(seq_along(vec) / chunk.size))
+}
+
+# -----------------------------------------------------------------------------
+#  EXPRESSION MATRIX EXTRACTOR -------------------------------------------------
+# -----------------------------------------------------------------------------
+.cntEval <- function(obj, assay = "RNA", type = "counts") {
+  if (.is_seurat(obj)) {
+    # use generic accessor to avoid tight coupling to Seurat internals
+    if (requireNamespace("SeuratObject", quietly = TRUE)) {
+      cnts <- SeuratObject::GetAssayData(obj, assay = assay, slot = type)
     } else {
-      cnts <- assay(altExp(obj), pos)
+      cnts <- obj@assays[[assay]][type]
     }
+  } else if (.is_sce(obj)) {
+    pos <- if (assay == "RNA") "counts" else assay
+    cnts <- if (assay == "RNA") SummarizedExperiment::assay(obj, pos)
+    else SummarizedExperiment::assay(SingleCellExperiment::altExp(obj), pos)
   } else {
     cnts <- obj
   }
-  cnts <- cnts[rowSums2(cnts) != 0,]
-  return(cnts)
+  cnts[MatrixGenerics::rowSums2(cnts) != 0, , drop = FALSE]
 }
 
-#Add the values to single cell object
-#' @importFrom SeuratObject CreateAssayObject CreateAssay5Object
-#' @importFrom SummarizedExperiment SummarizedExperiment assays<-
-#' @importFrom SingleCellExperiment altExps altExp<- 
-.adding.Enrich <- function(sc, enrichment, enrichment.name) {
-  if (inherits(sc, "Seurat")) {
-    if (as.numeric(substr(sc@version,1,1)) == 5) {
-      new.assay <- suppressWarnings(CreateAssay5Object(
-                                    data = as.matrix(t(enrichment))))
-    } else {
-      new.assay <- suppressWarnings(CreateAssayObject(
-                                    data = as.matrix(t(enrichment))))
+# -----------------------------------------------------------------------------
+#  ATTACH / PULL ENRICHMENT MATRICES ------------------------------------------
+# -----------------------------------------------------------------------------
+.adding.Enrich <- function(sc, enrichment, name) {
+  if (.is_seurat(sc)) {
+    if (requireNamespace("SeuratObject", quietly = TRUE)) {
+      major <- as.numeric(substr(sc@version, 1, 1))
+      fn    <- if (major >= 5) SeuratObject::CreateAssay5Object
+      else SeuratObject::CreateAssayObject
+      sc[[name]] <- fn(data = as.matrix(t(enrichment)))
     }
-    
-    suppressWarnings(sc[[enrichment.name]] <- new.assay)
-  } else if (inherits(sc, "SingleCellExperiment")) {
-    altExp(sc, enrichment.name) <- SummarizedExperiment(assays = t(enrichment))
-    names(assays(altExp(sc, enrichment.name))) <- enrichment.name
+  } else if (.is_sce(sc)) {
+    altExp(sc, name) <- SummarizedExperiment::SummarizedExperiment(assays = list(data = t(enrichment)))
   }
-  return(sc)
+  sc
 }
 
-#' @importFrom SummarizedExperiment assay
-#' @importFrom SingleCellExperiment altExp
-#' @importFrom Matrix t
-.pull.Enrich <- function(sc, enrichment.name) {
-  if (inherits(sc, "Seurat")) {
-    values <- Matrix::t(sc[[enrichment.name]]["data"])
-  } else if (inherits(sc, "SingleCellExperiment")) {
-    if(length(assays(altExp(sc))) == 1) {
-      values <- t(assay(altExps(sc)[[enrichment.name]]))
-    }
+.pull.Enrich <- function(sc, name) {
+  if (.is_seurat(sc)) {
+    Matrix::t(sc[[name]]["data"])
+  } else if (.is_sce(sc)) {
+    t(SummarizedExperiment::assay(SingleCellExperiment::altExp(sc)[[name]]))
   }
 }
 
-#' @importFrom GSEABase geneIds
+# -----------------------------------------------------------------------------
+#  GENE‑SET / META HELPERS -----------------------------------------------------
+# -----------------------------------------------------------------------------
 .GS.check <- function(gene.sets) {
-  if(is.null(gene.sets)) {
-    stop("Please provide the gene.sets you would like to use for 
-            the enrichment analysis")
-  }
-  egc <- gene.sets
-  if(inherits(egc, what = "GeneSetCollection")){
-    egc <- GSEABase::geneIds(egc) # will return a simple list, 
-    #which will work if a matrix is supplied to GSVA
-  }
-  return(egc)
+  if (is.null(gene.sets))
+    stop("Please supply 'gene.sets'")
+  if (inherits(gene.sets, "GeneSetCollection"))
+    return(GSEABase::geneIds(gene.sets))
+  gene.sets
 }
 
-#This is to grab the meta data from a seurat or SCE object
-#' @importFrom SingleCellExperiment colData 
-#' @importFrom SeuratObject Idents
-#' @importFrom methods slot
-#' @keywords internal
 .grabMeta <- function(sc) {
-  if (is_seurat_object(sc)) {
-    meta <- data.frame(sc[[]], slot(sc, "active.ident"))
-    colnames(meta)[length(meta)] <- "ident"
-    
-  } else if (is_se_object(sc)){
-    meta <- data.frame(colData(sc))
-    rownames(meta) <- sc@colData@rownames
-    clu <- which(colnames(meta) == "ident")
-    colnames(meta)[clu] <- "ident"
+  if (.is_seurat(sc)) {
+    out <- data.frame(sc[[]], ident = SeuratObject::Idents(sc))
+  } else if (.is_sce(sc)) {
+    out <- data.frame(SummarizedExperiment::colData(sc))
+    rownames(out) <- SummarizedExperiment::colData(sc)@rownames
+    if ("ident" %!in% colnames(out))
+      out$ident <- NA
   } else {
-    stop("Object indicated is not of class 'Seurat' or 
-            'SummarizedExperiment', make sure you are using
-            the correct data.")
+    stop("Unsupported object type")
   }
-  return(meta)
+  out
 }
 
-#' @importFrom SingleCellExperiment reducedDim 
 .grabDimRed <- function(sc, dimRed) {
-  if (is_seurat_object(sc)) {
-    values <- c(list(PCA = sc[[dimRed]]@cell.embeddings),
-                            sc[[dimRed]]@misc)
-    
-  } else if (is_se_object(sc)){
-    values <- c(list(PCA = reducedDim(sc, dimRed)),
-                   sc@metadata[c("eigen_values","contribution","rotation")])
-    
+  if (.is_seurat(sc)) {
+    list(PCA = sc[[dimRed]]@cell.embeddings, sc[[dimRed]]@misc)
+  } else if (.is_sce(sc)) {
+    list(PCA = SingleCellExperiment::reducedDim(sc, dimRed),
+         sc@metadata[c("eigen_values", "contribution", "rotation")])
   }
-  return(values)
 }
 
-#function to split matrices by row
-#adopted from ucells split_data.matrix
-split_rows <- function (matrix, chunk.size = 1000) 
-{
-  nrows <- dim(matrix)[1]
-  if(is.vector(matrix)){
-    nrows <- length(matrix)
-  }
-  nchunks <- (nrows - 1)%/%chunk.size + 1
-  split.data <- list()
-  min <- 1
-  for (i in seq_len(nchunks)) {
-    if (i == nchunks - 1) {
-      left <- nrows - (i - 1) * chunk.size
-      max <- min + round(left/2) - 1
-    }
-    else {
-      max <- min(i * chunk.size, nrows)
-    }
-    split.data[[i]] <- matrix[min:max,]
-    min <- max + 1
-  }
-  return(split.data)
-}
-#function to split vector
-#adopted from ucells split_data.matrix
-split_vector <- function (vector, chunk.size = 1000) 
-{
+# -----------------------------------------------------------------------------
+#  Underlying Enrichment Calculations
+# -----------------------------------------------------------------------------
 
-  nrows <- length(vector)
-  nchunks <- (nrows - 1)%/%chunk.size + 1
-  split.data <- list()
-  min <- 1
-  for (i in seq_len(nchunks)) {
-    if (i == nchunks - 1) {
-      left <- nrows - (i - 1) * chunk.size
-      max <- min + round(left/2) - 1
-    }
-    else {
-      max <- min(i * chunk.size, nrows)
-    }
-    split.data[[i]] <- vector[min:max]
-    min <- max + 1
+#─ Ensures a package is present and attaches quietly; 
+.load_backend <- function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    stop(pkg, " not installed – install or choose a different `method`.",
+         call. = FALSE)
   }
-  return(split.data)
+}
+
+#─ Build the *Param* object used by GSVA for classic GSVA / ssGSEA -------------
+.build_gsva_param <- function(expr, gene_sets, method) {
+  .load_backend("GSVA")
+  if (method == "GSVA") {
+    GSVA::gsvaParam(exprData = expr, geneSets = gene_sets, kcdf = "Poisson")
+  } else {                               # ssGSEA
+    GSVA::ssgseaParam(exprData = expr, geneSets = gene_sets, normalize = FALSE)
+  }
+}
+
+#─ Perform enrichment on one cell chunk ---------------------------------------
+.compute_enrichment <- function(expr, gene_sets, method, BPPARAM, ...) {
+  switch(toupper(method),
+         "GSVA" = {
+           param <- .build_gsva_param(expr, gene_sets, "GSVA")
+           GSVA::gsva(param = param, BPPARAM = BPPARAM, verbose = FALSE, ...)
+         },
+         "SSGSEA" = {
+           param <- .build_gsva_param(expr, gene_sets, "ssGSEA")
+           GSVA::gsva(param = param, BPPARAM = BPPARAM, verbose = FALSE, ...)
+         },
+         "UCELL" = {
+           .load_backend("UCell")
+           t(UCell::ScoreSignatures_UCell(matrix  = expr,
+                                          features = gene_sets,
+                                          name     = NULL,
+                                          BPPARAM  = BPPARAM,
+                                          ...))
+         },
+         "AUCELL" = {
+           .load_backend("AUCell")
+           ranks <- AUCell::AUCell_buildRankings(expr, plotStats = FALSE, verbose = FALSE)
+           SummarizedExperiment::assay(
+             AUCell::AUCell_calcAUC(geneSets = gene_sets,
+                                    rankings  = ranks,
+                                    normAUC   = TRUE,
+                                    aucMaxRank = ceiling(0.2 * nrow(expr)),
+                                    verbose  = FALSE,
+                                    ...))
+         },
+         stop("Unknown method: ", method, call. = FALSE)
+  )
+}
+
+#─ Split a matrix into equal‑sized column chunks ------------------------------
+.split_cols <- function(mat, chunk) {
+  if (ncol(mat) <= chunk) return(list(mat))
+  idx <- split(seq_len(ncol(mat)), ceiling(seq_len(ncol(mat)) / chunk))
+  lapply(idx, function(i) mat[, i, drop = FALSE])
 }
 
 
