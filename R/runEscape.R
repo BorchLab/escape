@@ -64,49 +64,76 @@ escape.matrix <- function(input.data,
                           make.positive = FALSE,
                           BPPARAM = SerialParam(),
                           ...) {
-  # 1) Resolve gene‑sets & counts 
-  egc  <- .GS.check(gene.sets)
-  cnts <- .cntEval(input.data, assay = "RNA", type = "counts")
-  
-  # 2) Filter gene‑sets shorter than min.size ---------------------------------
-  keep <- vapply(egc, function(gs) sum(rownames(cnts) %in% gs) >= min.size,
-                 logical(1))
-  if (!all(keep)) {
-    egc <- egc[keep]
-    if (!length(egc))
-      stop("No gene‑sets meet the size threshold (min.size=", min.size, ")")
-  }
-  
-  # 3) Split cells 
-  chunks <- .split_cols(cnts, groups)
-  message("escape_matrix(): processing ", length(chunks), " chunk(s)…")
-  
-  # 4) Compute enrichment per chunk in parallel 
-  res_list <- BiocParallel::bplapply(chunks, function(mat) {
-    .compute_enrichment(mat, egc, method, BPPARAM, ...)
-  }, BPPARAM = BPPARAM)
-  
-  # 5) Combine, transpose so rows=cells, cols=gene‑sets ------------------------
-  all_sets <- names(egc)
-  res_mat <- do.call(cbind, lapply(res_list, function(m) {
-    m <- as.matrix(m)
-    m <- m[match(all_sets, rownames(m)), , drop = FALSE]
-    m
-  }))
-  res_mat <- t(res_mat)
-  colnames(res_mat) <- all_sets
-  
-  # 6) Optional dropout normalization ----------------------------------------
-  if (normalize) {
-    res_mat <- performNormalization(sc.data = input.data,
-                                    enrichment.data = res_mat,
-                                    assay = NULL,
-                                    gene.sets = gene.sets,
-                                    make.positive = make.positive,
-                                    groups = groups)
-  }
-  
-  res_mat
+    egc <- .GS.check(gene.sets)
+    cnts <- .cntEval(input.data, assay = "RNA", type = "counts")
+    egc.size <- lapply(egc, function(x) length(which(rownames(cnts) %in% x)))
+    if (!is.null(min.size)){
+      remove <- unname(which(egc.size < min.size | egc.size == 0))
+      if(length(remove) > 0) {
+        egc <- egc[-remove]
+        egc.size <- egc.size[-remove]
+        if(length(egc) == 0) {
+          stop("No gene sets passed the minimum length - please reconsider the 'min.size' parameter")
+        }
+      }
+    }
+    
+    scores <- list()
+    splits <- seq(1, ncol(cnts), by=groups)
+    print(paste('Using sets of', groups, 'cells. Running', 
+                length(splits), 'times.'))
+    split.data <- .split_data.matrix(matrix=cnts, chunk.size=groups)
+    
+    all_gene_sets <- names(egc) # Collect all gene set names
+    
+    for (i in seq_along(splits)) {
+      if (method == "GSVA") {
+        parameters <- .gsva.setup(split.data[[i]], egc)
+      } else if (method == "ssGSEA") {
+        parameters <- .ssGSEA.setup(split.data[[i]], egc)
+      }
+      if (method %in% c("ssGSEA", "GSVA")) {
+        a <- suppressWarnings(gsva(param = parameters, 
+                                   verbose = FALSE,
+                                   BPPARAM = BPPARAM,
+                                   ...))
+      } else if (method == "UCell") {
+        a <- t(suppressWarnings(
+          ScoreSignatures_UCell(matrix = split.data[[i]], 
+                                features = egc,
+                                name = NULL,
+                                BPPARAM = BPPARAM,
+                                ...)))
+      } else if (method == "AUCell") {
+        rankings <- AUCell_buildRankings(split.data[[i]],
+                                         plotStats = FALSE,
+                                         verbose = FALSE)
+        a <- assay(AUCell_calcAUC(geneSets = egc,
+                                  rankings,
+                                  normAUC = TRUE,
+                                  aucMaxRank = ceiling(0.2 * nrow(split.data[[i]])),
+                                  verbose = FALSE,
+                                  ...))
+      }
+      
+      # Ensure consistent row names (all_gene_sets) across splits
+      a <- as.data.frame(a)
+      a <- a[match(all_gene_sets, rownames(a), nomatch = NA), , drop = FALSE]
+      scores[[i]] <- a
+    }
+    scores <- do.call(cbind, scores)
+    output <- t(as.matrix(scores))
+    
+    #Normalize based on dropout
+    if(normalize) {
+      output <- performNormalization(sc.data = input.data,
+                                     enrichment.data = output,
+                                     assay = NULL,
+                                     gene.sets = gene.sets,
+                                     make.positive = make.positive,
+                                     groups = groups)
+    }
+    return(output)
 }
 
 
