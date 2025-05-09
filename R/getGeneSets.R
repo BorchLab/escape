@@ -1,20 +1,22 @@
 # create a cache environment.
 .msigdb_cache <- new.env(parent = emptyenv())
 
-# Helper function: Retrieve (or download and cache) the msigdb object.
-getMsigdbCached <- function(org, id, version) {
-  cache_key <- paste(org, id, version, sep = "_")
-  
-  if (exists(cache_key, envir = .msigdb_cache)) {
-    message("Loading msigdb object from cache")
-    msigdb_obj <- get(cache_key, envir = .msigdb_cache)
-  } else {
-    message("Downloading msigdb object")
-    msigdb_obj <- suppressMessages(getMsigdb(org = org, id = id, version = version))
-    msigdb_obj <- suppressMessages(suppressWarnings(appendKEGG(msigdb_obj)))
-    assign(cache_key, msigdb_obj, envir = .msigdb_cache)
+.msigdb_cached <- function(org, id = "SYM", version = "7.4") {
+  key <- paste(org, id, version, sep = "_")
+  if (!exists(key, envir = .msigdb_cache, inherits = FALSE)) {
+    if (!requireNamespace("msigdb", quietly = TRUE))
+      stop("Package 'msigdb' must be installed to download MSigDB resources")
+    gs <- suppressMessages(
+      msigdb::getMsigdb(org = org, id = id, version = version)
+    )
+    ## include KEGG sets (optional; silently ignore if API changes)
+    gs <- tryCatch(
+      suppressWarnings(msigdb::appendKEGG(gs)),
+      error = function(e) gs
+    )
+    assign(key, gs, envir = .msigdb_cache)
   }
-  return(msigdb_obj)
+  get(key, envir = .msigdb_cache, inherits = FALSE)
 }
 
 #' Get a collection of gene sets from the msigdb
@@ -24,18 +26,12 @@ getMsigdbCached <- function(org, id, version) {
 #' subcollection, or specific gene sets, and only supports human 
 #' ("Homo sapiens") and mouse ("Mus musculus").
 #'
-#' @param species The scientific name of the species of interest; only 
-#' "Homo sapiens" or "Mus musculus" are supported.
-#' @param library A character vector of main collections (e.g. "H", "C5"). 
-#' If provided, only gene sets in these collections are returned.
-#' @param subcategory A character vector specifying sub-collection abbreviations 
-#' (e.g. "CGP", "CP:REACTOME") to further subset the gene sets.
-#' @param gene.sets A character vector of specific gene set names to select. 
-#' This filter is applied after other subsetting.
-#' @param version The version of MSigDB to use (default "7.4").
-#' @param id The gene identifier type to use (default "SYM" for gene symbols).
-#'
-#' @return A named list of gene identifiers for each gene set.
+#' @param species   `"Homo sapiens"` (default) or `"Mus musculus"`.
+#' @param library   Optional vector of main collection codes (e.g. `"H"`, `"C5"`).
+#' @param subcategory Optional vector of sub-collection codes (e.g. `"GO:BP"`).
+#' @param gene.sets Optional vector of specific gene-set names.
+#' @param version   MSigDB version (character, default `"7.4"`).
+#' @param id        Identifier type (default `"SYM"` for symbols).
 #'
 #' @examples
 #' \dontrun{
@@ -48,66 +44,63 @@ getMsigdbCached <- function(org, id, version) {
 #'                   library = c("C2", "C5"), 
 #'                   subcategory = "GO:BP")
 #' }
-#' @importFrom GSEABase GeneSet GeneSetCollection geneIds
-#' @importFrom msigdb getMsigdb appendKEGG
-#' @importFrom stringr str_replace_all
+#'
+#' @return A named `list` of character vectors (gene IDs).  
+#'         If **GSEABase** is installed, the function also returns (invisibly)
+#'         a `GeneSetCollection` with the same content.
 #' @export
-getGeneSets <- function(species = "Homo sapiens", 
-                        library = NULL, 
-                        subcategory = NULL,
-                        gene.sets = NULL,
-                        version = "7.4",
-                        id = "SYM") {
-  # Only support human and mouse.
-  if (!(species %in% c("Homo sapiens", "Mus musculus"))) {
-    stop("Supported species are only 'Homo sapiens' and 'Mus musculus'.")
-  }
+getGeneSets <- function(species      = c("Homo sapiens", "Mus musculus"),
+                        library      = NULL,
+                        subcategory  = NULL,
+                        gene.sets    = NULL,
+                        version      = "7.4",
+                        id           = "SYM")
+{
+  species <- match.arg(species)
+  org     <- if (species == "Homo sapiens") "hs" else "mm"
   
-  # Map species name to the organism code used by msigdb.
-  org <- ifelse(species == "Homo sapiens", "hs", "mm")
+  ## download or fetch from cache ------------------------------------------------
+  msig <- .msigdb_cached(org, id, version)
   
-  # Retrieve the msigdb object, from cache if available.
-  msigdb_obj <- getMsigdbCached(org = org, id = id, version = version)
+  ## helper to interrogate S4 slots without formal import ------------------------
+  .slot_chr <- function(obj, slot)
+    as.character(methods::slot(obj, slot, exact = TRUE))
   
-  # Filter by main collection using the S4 slot:
-  if (!is.null(library)) {
-    msigdb_obj <- msigdb_obj[sapply(msigdb_obj, function(x) 
-      toupper(x@collectionType@category) %in% toupper(library))]
-  }
+  ## apply successive filters in one pass ---------------------------------------
+  keep <- rep(TRUE, length(msig))
   
-  # Filter by subcollection using the S4 slot:
-  if (!is.null(subcategory)) {
-    msigdb_obj <- msigdb_obj[sapply(msigdb_obj, function(x) 
-      x@collectionType@subCategory %in% toupper(subcategory))]
-  }
+  if (!is.null(library))
+    keep <- keep & .slot_chr(msig, "collectionType") |> 
+    vapply(\(x) toupper(methods::slot(x, "category")), "", USE.NAMES = FALSE) %in% toupper(library)
   
-  # Optional filtering by specific gene set names.
-  if (!is.null(gene.sets)) {
-    msigdb_obj <- msigdb_obj[sapply(msigdb_obj, function(x) x@setName %in% gene.sets)]
-  }
+  if (!is.null(subcategory))
+    keep <- keep & vapply(msig,
+                          \(x) toupper(methods::slot(x@collectionType, "subCategory")),
+                          "", USE.NAMES = FALSE) %in% toupper(subcategory)
   
-  if (length(msigdb_obj) == 0) {
-    warning("No gene sets found for the specified parameters.")
+  if (!is.null(gene.sets))
+    keep <- keep & vapply(msig, \(x) x@setName, "", USE.NAMES = FALSE) %in% gene.sets
+  
+  msig <- msig[keep]
+  if (!length(msig)) {
+    warning("No gene sets matched the requested filters.")
     return(NULL)
   }
   
-  # Build the gene set list.
-  gs_names <- unique(sapply(msigdb_obj, function(x) x@setName))
-  gene_set_list <- vector("list", length(gs_names))
-  for (i in seq_along(gs_names)) {
-    genes <- unique(unlist(lapply(msigdb_obj, function(x) {
-      if (x@setName == gs_names[i]) {
-        return(x@geneIds)
-      }
-    })))
-    gene_set_list[[i]] <- GSEABase::GeneSet(genes, setName = gs_names[i])
+  ## build simple list -----------------------------------------------------------
+  g.list <- split(
+    vapply(msig, `[`, i = "geneIds", FUN.VALUE = character(1L), USE.NAMES = FALSE),
+    vapply(msig, `[`, i = "setName", FUN.VALUE = character(1L), USE.NAMES = FALSE)
+  )
+  names(g.list) <- gsub("_", "-", names(g.list), fixed = TRUE)
+  
+  ## optionally attach GeneSetCollection invisibly ------------------------------
+  if (requireNamespace("GSEABase", quietly = TRUE)) {
+    gsc <- GSEABase::GeneSetCollection(
+      Map(GSEABase::GeneSet, g.list, setName = names(g.list))
+    )
+    invisible(gsc)
   }
   
-  # Create a GeneSetCollection and return as a named list.
-  gsc <- GSEABase::GeneSetCollection(gene_set_list)
-  mod.names <- stringr::str_replace_all(names(gsc), "_", "-")
-  gene_list <- GSEABase::geneIds(gsc)
-  names(gene_list) <- mod.names
-  
-  return(gene_list)
+  g.list
 }
