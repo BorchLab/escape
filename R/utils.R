@@ -84,25 +84,47 @@
   grDevices::hcl.colors(n = n, palette = palette, fixup = TRUE)
 }
 
-.colorby <- function(enriched, plot, color.by, palette, type = "fill") {
-  vec <- enriched[[color.by]]
-  is_num <- is.numeric(vec)
-  if (!is_num && requireNamespace("stringr", quietly = TRUE))
-    lev <- stringr::str_sort(unique(vec), numeric = TRUE) else lev <- unique(vec)
+.colorby <- function(enriched,
+                     plot,
+                     color.by,
+                     palette,
+                     type = c("fill", "color")) {
   
-  pal_fun <- switch(type,
-                    fill   = ggplot2::scale_fill_manual,
-                    color  = ggplot2::scale_color_manual)
-  grad_fun <- switch(type,
-                     fill   = ggplot2::scale_fill_gradientn,
-                     color  = ggplot2::scale_color_gradientn)
+  type <- match.arg(type)
+  
+  vec    <- enriched[[color.by]]
+  is_num <- is.numeric(vec)
+  
+  ## pick scale constructors --------------------------------------------------
+  scale_discrete <- switch(type,
+                           fill  = ggplot2::scale_fill_manual,
+                           color = ggplot2::scale_color_manual)
+  
+  scale_gradient <- switch(type,
+                           fill  = ggplot2::scale_fill_gradientn,
+                           color = ggplot2::scale_color_gradientn)
+  
+  ## build scale + legend ------------------------------------------------------
   if (is_num) {
-    plot + grad_fun(colors = .colorizer(palette, 11), aesthetics = type) +
-      labs(**setNames(list(color.by), type))
+    plot <- plot +
+      scale_gradient(colors = .colorizer(palette, 11)) +
+      do.call(ggplot2::labs, setNames(list(color.by), type))
   } else {
-    pal <- .colorizer(palette, length(lev)); names(pal) <- lev
-    plot + pal_fun(values = pal) + labs(**setNames(list(color.by), type))
+    lev <- if (requireNamespace("stringr", quietly = TRUE)) {
+      stringr::str_sort(unique(vec), numeric = TRUE)
+    } else {
+      unique(vec)
+    }
+    
+    pal            <- .colorizer(palette, length(lev))
+    names(pal)     <- lev
+    
+    plot <- plot +
+      scale_discrete(values = pal) +
+      do.call(ggplot2::labs, setNames(list(color.by), type))
   }
+  
+  plot
 }
 
 # -----------------------------------------------------------------------------
