@@ -2,16 +2,15 @@
 
 # ------------------------------------------------------------------- helpers --
 mini_gs <- list(
-  B = c("MS4A1", "CD79B", "CD79A"),
-  T = c("CD3E", "CD3D", "CD3G")
-)
+  B = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+  T = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 
 get_score <- function(method = "ssGSEA", ...) {
   escape.matrix(pbmc_small,
                 gene.sets      = mini_gs,
                 method         = method,
                 groups         = 200,  # small chunk for speed
-                min.size       = 3,
+                min.size       = 0,
                 normalize      = FALSE,
                 make.positive  = FALSE,
                 min.expr.cells = 0,
@@ -26,8 +25,8 @@ test_that("escape.matrix() accepts Seurat, SCE and matrix", {
   mtx <- pbmc_small[["RNA"]]@counts
   
   expect_silent(get_score(method = "ssGSEA"))
-  expect_silent(escape.matrix(sce,   mini_gs))
-  expect_silent(escape.matrix(mtx,   mini_gs))
+  expect_silent(escape.matrix(sce,   mini_gs, min.size = 0))
+  expect_silent(escape.matrix(mtx,   mini_gs, min.size = 0))
 })
 
 test_that("invalid method triggers error", {
