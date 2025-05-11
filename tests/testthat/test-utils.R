@@ -81,8 +81,8 @@ test_that(".split_rows splits rows and preserves data", {
 test_that(".split_vector chunks vectors", {
   v <- letters[1:11]
   out <- .split_vector(v, chunk.size = 4)
-  expect_equal(lengths(out), c(4, 4, 3))
-  expect_equal(unlist(out), v)
+  expect_equal(as.vector(lengths(out)), c(4, 4, 3))
+  expect_equal(as.vector(unlist(out)), v)
 })
 
 ## --------------------------------------------------------------------- ##
@@ -119,14 +119,19 @@ test_that(".cntEval drops all-zero rows for plain matrices", {
   m <- matrix(c(0, 0, 1, 2, 0, 0), nrow = 3, byrow = TRUE,
               dimnames = list(paste0("g", 1:3), NULL))
   out <- .cntEval(m)
-  expect_equal(rownames(out), c("g2", "g3"))
+  expect_equal(rownames(out), c("g2"))
 })
 
 test_that(".cntEval works for Seurat & SCE (if installed)", {
   if (requireNamespace("SeuratObject", quietly = TRUE)) {
     s <- SeuratObject::CreateSeuratObject(
-      counts = matrix(c(0, 0, 1, 0, 3, 4), nrow = 3,
-                      dimnames = list(c("g1", "g2", "g3"), NULL))
+      counts = Matrix::sparseMatrix(
+        i = c(1, 1, 2, 1, 3, 3),
+        j = c(1, 2, 3, 4, 5, 6),
+        x = c(0, 0, 1, 0, 3, 4),
+        dims = c(3, 6),
+        dimnames = list(c("g1", "g2", "g3"), NULL)
+      )
     )
     out <- .cntEval(s)
     expect_equal(rownames(out), c("g2", "g3"))
@@ -137,7 +142,7 @@ test_that(".cntEval works for Seurat & SCE (if installed)", {
                                     dimnames = list(c("g1", "g2", "g3"), NULL)))
     )
     out <- .cntEval(sce)
-    expect_equal(rownames(out), c("g1", "g3"))
+    expect_equal(rownames(out), c("g2", "g3"))
   }
 })
 
@@ -179,3 +184,4 @@ test_that(".split_cols duplicate definition behaves consistently", {
   mat <- matrix(seq_len(12), nrow = 3)          # 3 × 4
   expect_identical(.split_cols(mat, 5), list(mat))  # <= chunk size
 })
+
