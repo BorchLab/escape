@@ -1,6 +1,6 @@
 Package: escape
 Title: Easy single cell analysis platform for enrichment
-Version: 2.3.1
+Version: 2.5.0
 Authors@R: c(
     person(given = "Nick", family = "Borcherding", role = c("aut", "cre"), email = "ncborch@gmail.com"),
     person(given = "Jared", family = "Andrews", role = c("aut"), email = "jared.andrews07@gmail.com"),
@@ -16,39 +16,40 @@ Depends: R (>= 4.1)
 Imports: 
     AUCell,
     BiocParallel,
-    grDevices,
-    dplyr,
     ggdist,
     ggplot2,
     ggpointdensity,
     GSEABase,
     GSVA,
-    SingleCellExperiment,
     ggridges,
-    msigdb,
-    stats,
-    reshape2,
-    patchwork,
+    grid,               
+    Matrix,
     MatrixGenerics,
-    utils,
+    msigdb,
+    plyr,                
+    scales,              
+    SingleCellExperiment,
+    stringr,
     SummarizedExperiment,
     UCell,
-    stringr,
+    utils,
+    grDevices,
     methods,
-    SeuratObject,
-    Matrix
+    stats
 Suggests: 
     Seurat,
+    dplyr,
     hexbin,
+    irlba,
     scran,
     knitr,
     rmarkdown,
+    rlang,
     markdown,
     BiocStyle,
     RColorBrewer,
     rlang,
     spelling,
-    testthat (>= 3.0.0),
-    vdiffr
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Language: en-US
