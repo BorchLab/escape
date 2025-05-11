@@ -1,29 +1,32 @@
-#' Normalize enrichment scores by expressed‑gene counts per cell
+#' Perform Normalization on Enrichment Data
 #' 
-#' @description
-#' Scales each enrichment value by the **number of genes from the set that are
-#' expressed** in that cell (non‑zero counts). Optionally shifts results into a
-#' positive range and/or applies a natural‑log transform for compatibility with
-#' log‑based differential tests.
-#'
-#' @inheritParams escape_matrix
-#' @param sc.data      Single‑cell object used to generate *raw* enrichment, or a
-#'                     matrix of counts (cells × genes) when `enrichment.data`
-#'                     is supplied.
-#' @param enrichment.data Matrix with raw enrichment scores (cells × gene sets).
-#'                        Required when `sc.data` is a plain matrix.
-#' @param assay        Name of the assay to read/write inside `sc.data` when it
-#'                     is a Seurat / SCE object. Default is "escape".
-#' @param gene.sets    The gene‑set definitions originally used. Needed to count
-#'                     expressed genes per set.
-#' @param make.positive Logical; if `TRUE` shifts each column so its minimum is
-#'                     zero.
-#' @param scale.factor Optional numeric vector overriding gene‑count scaling
-#'                     (length = #cells). Use when you want external per‑cell
-#'                     normalisation factors.
-#' @param groups       Chunk size (cells per block) when memory is limited.
-#'
-#' @example 
+#' This function allows users to normalize the enrichment calculations 
+#' by accounting for single-cell dropout and producing positive 
+#' values for downstream differential enrichment analyses. Default calculation 
+#' uses will scale the enrichment values by the number of genes present from 
+#' the gene set and then use a natural log transformation. A positive range
+#' values is useful for several downstream analyses, like differential 
+#' evaluation for log2-fold change, but will alter the original 
+#' enrichment values.
+#' 
+#' @param sc.data Single-cell object or matrix used in the gene set enrichment calculation in 
+#' \code{\link{escape.matrix}} or \code{\link{runEscape}}.
+#' @param enrichment.data The enrichment results from \code{\link{escape.matrix}} 
+#' or \code{\link{runEscape}} (optional)
+#' @param assay Name of the assay to normalize if using a single-cell object
+#' @param gene.sets The gene set library to use to extract 
+#' the individual gene set information from
+#' @param scale.factor A vector to use for normalizing enrichment scores per cell.
+#' @param make.positive Shift enrichment values to a positive range \strong{TRUE}
+#' for downstream analysis or not \strong{TRUE} (default).
+#' @param groups the number of cells to calculate normalization on at once.
+#' chunks matrix into groups sized chunks. Useful in case of memory issues.
+#' @importFrom stringr str_replace_all
+#' @importFrom SeuratObject Assays
+#' @importFrom SummarizedExperiment assays
+#' @importFrom Matrix colSums
+
+#' @examples
 #' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 #' pbmc_small <- SeuratObject::pbmc_small
@@ -35,83 +38,90 @@
 #'                                    assay = "escape", 
 #'                                    gene.sets = GS)
 #'
-#' @return If `sc.data` is an object, the same object with a new assay
-#'         "<assay>_normalized". Otherwise a matrix of normalised scores.
 #' @export
+#' @return Single-cell object or matrix of normalized enrichment scores
 
 performNormalization <- function(sc.data,
                                  enrichment.data = NULL,
-                                 assay           = "escape",
-                                 gene.sets       = NULL,
-                                 make.positive   = FALSE,
-                                 scale.factor    = NULL,
-                                 groups          = NULL) {
-  ## ----------------------------------------------------------------------
-  ## 1. Retrieve enrichment matrix ---------------------------------------
-  assay.present <- FALSE
-  if (!is.null(assay) && .is_sc_object(sc.data)) {
-    if (.is_seurat(sc.data)) {
-      assay.present <- assay %in% SeuratObject::Assays(sc.data)
-    } else if (.is_sce(sc.data) || .is_se(sc.data)) {
-      assay.present <- assay %in% names(SummarizedExperiment::altExps(sc.data))
+                                 assay = "escape",
+                                 gene.sets = NULL,
+                                 make.positive = FALSE,
+                                 scale.factor = NULL,
+                                 groups = NULL) {
+  if(!is.null(assay)) {
+    if(is_seurat_object(sc.data)) {
+      assay.present <- assay %in% Assays(sc.data)
+    } else if (is_se_object(sc.data)) {
+      assay.present <- assay %in% assays(sc.data)
     }
+  } else {
+    assay.present <- FALSE
   }
   
-  enriched <- if (assay.present) .pull.Enrich(sc.data, assay) else enrichment.data
-  if (is.null(enriched)) stop("Could not obtain enrichment matrix – please set 'assay' or supply 'enrichment.data'.")
   
-  ## ----------------------------------------------------------------------
-  ## 2. Validate / derive scale factors ----------------------------------
-  if (!is.null(scale.factor) && length(scale.factor) != nrow(enriched))
-    stop("Length of 'scale.factor' must match number of cells.")
+  if(is_seurat_or_se_object(sc.data) & !is.null(assay) & assay.present) {
+    enriched <- .pull.Enrich(sc.data, assay)
+  } else {
+    enriched <- enrichment.data
+  }
+  
+  if(!is.null(scale.factor) & length(scale.factor) != dim(sc.data)[2]) {
+    stop("If using a vector as a scale factor, please ensure the length matches the number of cells.")
+  }
+  
+  #Getting the gene sets that passed filters
+  egc <- .GS.check(gene.sets)
+  names(egc) <- str_replace_all(names(egc), "_", "-")
+  egc <- egc[names(egc) %in% colnames(enriched)]
+  
+  #Isolating the number of genes per cell expressed
+  if(is.null(groups)){
+    chunks <- dim(enriched)[[1]]
+  } else{
+    chunks <- min(groups, dim(enriched)[[1]])
+  }
   
   if (is.null(scale.factor)) {
-    egc <- .GS.check(gene.sets)
-    names(egc) <- gsub("_", "-", names(egc), fixed = TRUE)
-    egc <- egc[names(egc) %in% colnames(enriched)]
-    if (!length(egc)) stop("None of the supplied gene sets match enrichment columns.")
-    
-    ## counts matrix (genes × cells) – drop after use to save RAM
     cnts <- .cntEval(sc.data, assay = "RNA", type = "counts")
-    message("Computing expressed‑gene counts per cell …")
-    scale.mat <- do.call(cbind, lapply(egc, function(gs) {
-      vec <- Matrix::colSums(cnts[rownames(cnts) %in% gs, , drop = FALSE] != 0)
-      vec[vec == 0] <- 1L  # avoid /0
-      vec
-    }))
+    print("Calculating features per cell...")
+    egc.sizes <- lapply(egc, function(x){
+      scales<-unname(Matrix::colSums(cnts[which(rownames(cnts) %in% x),]!=0))
+      scales[scales==0] <- 1
+      scales
+    })
+    egc.sizes <- split_rows(do.call(cbind,egc.sizes), chunk.size=chunks)
     rm(cnts)
-    ## optionally split large matrices to spare memory
-    chunksize <- if (is.null(groups)) nrow(enriched) else min(groups, nrow(enriched))
-    sf.split  <- .split_rows(scale.mat, chunk = chunksize)
+  } else{
+    egc.sizes <- split_vector(scale.factor, chunk.size=chunks)
+  }
+  enriched <- split_rows(enriched, chunk.size=chunks)
+  
+  print("Normalizing enrichment scores per cell...")
+  #Dividing the enrichment score by number of genes expressed
+
+  enriched<-mapply(function(scores, scales){
+    scores/scales
+  }, enriched, egc.sizes, SIMPLIFY = FALSE)
+  enriched <- do.call(rbind, enriched)
+  if(make.positive){
+    enriched <- apply(enriched, 2, function(x){
+      x+max(0, -min(x))
+    })
+  }
+  #Default Scaling using natural log
+  if(is.null(scale.factor)) {
+    enriched <- suppressWarnings(ifelse(enriched >= 0, 
+                                 log1p(enriched + 1e-6), 
+                                 -log1p(abs(enriched) + 1e-6)))
+  }
+  
+  if(is_seurat_or_se_object(sc.data)) {
+    if(is.null(assay)) {
+      assay <- "escape"
+    }
+    sc.data <- .adding.Enrich(sc.data, enriched, paste0(assay, "_normalized"))
+    return(sc.data)
   } else {
-    sf.split  <- .split_vector(scale.factor, chunk = if (is.null(groups)) length(scale.factor) else min(groups, length(scale.factor)))
-  }
-  
-  ## ----------------------------------------------------------------------
-  ## 3. Chunked normalisation --------------------------------------------
-  message("Normalising enrichment scores …")
-  en.split <- .split_rows(enriched, chunk = if (is.null(groups)) nrow(enriched) else min(groups, nrow(enriched)))
-  norm.lst <- Map(function(sco, fac) sco / fac, en.split, sf.split)
-  normalized <- do.call(rbind, norm.lst)
-  
-  ## 4. Optional positive shift ------------------------------------------
-  if (make.positive) {
-    shift <- pmax(0, -apply(normalized, 2L, min))
-    normalized <- sweep(normalized, 2L, shift, `+`)
-  }
-  
-  ## 5. Log transform (only when scale.factor derived internally) ---------
-  if (is.null(scale.factor)) {
-    neg <- normalized < 0
-    normalized[!neg] <- log1p(normalized[!neg] + 1e-6)
-    normalized[neg]  <- -log1p(abs(normalized[neg]) + 1e-6)
-  }
-  
-  ## ----------------------------------------------------------------------
-  ## 6. Return ------------------------------------------------------------
-  if (.is_sc_object(sc.data)) {
-    .adding.Enrich(sc.data, normalized, paste0(assay %||% "escape", "_normalized"))
-  } else {
-    normalized
+    return(enriched)
   }
 }
