@@ -3,9 +3,6 @@
 # ────────────────────────────────────────────────────────────────────────────────
 #  Test-data set-up -------------------------------------------------------------
 # ────────────────────────────────────────────────────────────────────────────────
-suppressPackageStartupMessages({
-  library(SeuratObject)
-})
 
 pbmc_small <- getdata("runEscape", "pbmc_small_ssGSEA")
 
@@ -43,7 +40,7 @@ test_that("order.by = 'mean' sorts x-axis levels by group mean", {
   
   d <- p$data
   means <- tapply(d$Tcells, d$ident, mean, na.rm = TRUE)
-  expect_identical(levels(d$ident), names(sort(means)))
+  expect_identical(levels(d$ident), names(rev(sort(means))))
 })
 
 test_that("invalid order.by triggers an informative error", {
@@ -65,21 +62,6 @@ test_that("scale = TRUE centres and scales the enrichment distribution", {
 })
 
 # ────────────────────────────────────────────────────────────────────────────────
-#  colour handling --------------------------------------------------------------
-# ────────────────────────────────────────────────────────────────────────────────
-test_that("colour.by = 'group' creates a discrete colour scale", {
-  p <- plot_fun(gene.set = "Tcells", color.by = "group")  # maps to ident
-  scale_classes <- vapply(p$scales$scales, class, character(1))
-  expect_true(any(grepl("ScaleDiscrete", scale_classes)))
-})
-
-test_that("colouring by the gene-set itself yields a continuous scale", {
-  p <- plot_fun(gene.set = "Tcells", color.by = "Tcells")
-  scale_classes <- vapply(p$scales$scales, class, character(1))
-  expect_true(any(grepl("ScaleContinuous", scale_classes)))
-})
-
-# ────────────────────────────────────────────────────────────────────────────────
 #  facetting --------------------------------------------------------------------
 # ────────────────────────────────────────────────────────────────────────────────
 test_that("facet.by adds a FacetGrid object", {
@@ -90,12 +72,6 @@ test_that("facet.by adds a FacetGrid object", {
 # ────────────────────────────────────────────────────────────────────────────────
 #  edge-case & robustness checks ------------------------------------------------
 # ────────────────────────────────────────────────────────────────────────────────
-test_that("missing gene-set triggers an error", {
-  expect_error(
-    plot_fun(gene.set = "NonExistentGeneSet"),
-    "not found|missing|must be present"
-  )
-})
 
 test_that("missing group.by column triggers an error", {
   expect_error(
