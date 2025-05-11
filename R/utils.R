@@ -116,15 +116,15 @@
       unique(vec)
     }
     
-    pal            <- .colorizer(palette, length(lev))
-    names(pal)     <- lev
+    pal        <- .colorizer(palette, length(lev))
+    names(pal) <- lev
     
     plot <- plot +
       scale_discrete(values = pal) +
       do.call(ggplot2::labs, setNames(list(color.by), type))
   }
   
-  plot
+  return(plot)
 }
 
 # -----------------------------------------------------------------------------

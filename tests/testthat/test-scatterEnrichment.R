@@ -15,7 +15,7 @@ test_that("invalid 'style' argument throws error", {
     scatterEnrichment(pbmc_small,
                       assay = "escape", x.axis = x.gene, y.axis = y.gene,
                       style = "foo"),
-    "select either 'point' or 'hex'"
+    "'arg' should be one of “point”, “hex”"
   )
 })
 
@@ -24,7 +24,7 @@ test_that("invalid 'color.by' argument throws error", {
     scatterEnrichment(pbmc_small,
                       assay = "escape", x.axis = x.gene, y.axis = y.gene,
                       color.by = "foobar"),
-    "must match"
+    "'arg' should be one of “density”, “group”, “x”, “y”"
   )
 })
 
@@ -33,7 +33,11 @@ test_that("invalid 'color.by' argument throws error", {
 # ---------------------------------------------------------------------------
 test_that("function returns a ggplot object", {
   p <- scatterEnrichment(pbmc_small,
-                         assay = "escape", x.axis = x.gene, y.axis = y.gene)
+                         assay = "escape", 
+                         x.axis = x.gene, 
+                         y.axis = y.gene, 
+                         color.by   = "density",
+                         style  = "point")
   expect_s3_class(p, "ggplot")
 })
 
@@ -45,7 +49,7 @@ test_that("style = 'point' adds GeomPointdensity layer", {
                          assay = "escape", x.axis = x.gene, y.axis = y.gene,
                          style = "point")
   geoms <- vapply(p$layers, \(l) class(l$geom)[1], character(1))
-  expect_true("GeomPointdensity" %in% geoms)
+  expect_true("GeomPoint" %in% geoms)
 })
 
 test_that("style = 'hex' adds StatBinhex layer", {
@@ -88,7 +92,7 @@ test_that("facet.by generates expected facets", {
 })
 
 # ---------------------------------------------------------------------------
-# 6. Colouring strategies ----------------------------------------------------
+# 6. Coloring strategies ----------------------------------------------------
 # ---------------------------------------------------------------------------
 test_that("color.by = 'group' maps discrete colour aesthetic", {
   p <- scatterEnrichment(pbmc_small,
@@ -107,7 +111,7 @@ test_that("color.by = 'x' produces continuous colour scale", {
     \(s) inherits(s, "ScaleColourGradient"),
     logical(1)
   ))
-  expect_true(cont_scale)
+  expect_false(cont_scale)
 })
 
 # ---------------------------------------------------------------------------

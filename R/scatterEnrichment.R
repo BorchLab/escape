@@ -63,8 +63,8 @@ scatterEnrichment <- function(input.data,
                               add.corr   = FALSE) {
   
   ## ---- 0  Argument sanity checks -------------------------------------------
-  style    <- match.arg(tolower(style))
-  color.by <- match.arg(tolower(color.by))
+  style <- match.arg(style, choices = c("point", "hex"))
+  color.by <- match.arg(color.by, choices = c("density", "group", "x", "y"))
   if (is.null(group.by)) group.by <- "ident"
   gene.set <- c(x.axis, y.axis)
   
@@ -79,16 +79,26 @@ scatterEnrichment <- function(input.data,
   aes_base <- ggplot2::aes(x = .data[[x.axis]], y = .data[[y.axis]])
   
   ## ---- 3  Choose colouring strategy ----------------------------------------
+  
   if (color.by == "density") {
-    aes_col <- NULL                       # handled by geom_pointdensity()
+    aes_combined <- aes_base  # no color aesthetic
   } else if (color.by == "group") {
-    aes_col <- ggplot2::aes(color = .data[[group.by]])
-  } else {                                # "x" or "y"
-    sel     <- if (color.by == "x") x.axis else y.axis
-    aes_col <- ggplot2::aes(color = .data[[sel]])
+    aes_combined <- ggplot2::aes(
+      x = .data[[x.axis]], 
+      y = .data[[y.axis]], 
+      color = .data[[group.by]]
+    )
+  } else {  # "x" or "y"
+    sel <- if (color.by == "x") x.axis else y.axis
+    aes_combined <- ggplot2::aes(
+      x = .data[[x.axis]], 
+      y = .data[[y.axis]], 
+      color = .data[[sel]]
+    )
   }
   
-  plt <- ggplot2::ggplot(enriched, aes_base + aes_col)
+  # Now build the plot
+  plt <- ggplot2::ggplot(enriched, aes_combined)
   
   ## ---- 4  Geometry ---------------------------------------------------------
   if (style == "point") {
@@ -112,8 +122,13 @@ scatterEnrichment <- function(input.data,
   
   ## ---- 5  Colour scaling for non-density modes -----------------------------
   if (color.by != "density") {
+    sel <- switch(color.by,
+                  group = group.by,
+                  x     = x.axis,
+                  y     = y.axis)
+    
     plt <- .colorby(enriched, plt,
-                    color.by = if (color.by == "group") group.by else color.by,
+                    color.by = sel,
                     palette  = palette,
                     type     = "color")
   }
