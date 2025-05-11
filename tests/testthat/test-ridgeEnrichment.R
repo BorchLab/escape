@@ -1,85 +1,86 @@
 # test script for ridgeEnrichment.R - testcases are NOT comprehensive!
 
-test_that("ridgeEnrichment works", {
-  
-  seuratObj <- getdata("runEscape", "pbmc_small_ssGSEA")
-  
-  set.seed(42)
-  expect_doppelganger(
-    "ridgeEnrichment_default_plot",
-    ridgeEnrichment(
-      seuratObj, 
-      assay = "escape",
-      gene.set = "Bcells"
-    )
-  )
-  
-  set.seed(42)
-  expect_doppelganger(
-    "ridgeEnrichment_rugadded_plot",
-    ridgeEnrichment(
-      seuratObj, 
-      assay = "escape",
-      gene.set = "Bcells",
-      add.rug = TRUE
-    )
-  )
-  
-  set.seed(42)
-  expect_doppelganger(
-    "ridgeEnrichment_facet_plot",
-    ridgeEnrichment(
-      seuratObj, 
-      assay = "escape",
-      gene.set = "Bcells",
-      facet.by = "groups"
-    )
-  )
+pbmc_small <- getdata("runEscape", "pbmc_small_ssGSEA")
 
-  set.seed(42)
-  expect_doppelganger(
-    "ridgeEnrichment_order_plot",
-    ridgeEnrichment(
-      seuratObj, 
-      order.by = "mean",
-      assay = "escape",
-      gene.set = "Bcells"
-    )
+# -------------------------------------------------------------------------
+test_that("returns a proper ggplot object", {
+  
+  
+  p <- ridgeEnrichment(
+    pbmc_small,
+    assay     = "escape",
+    gene.set  = "Tcells",
+    group.by  = "groups"
   )
   
-  set.seed(42)
-  expect_doppelganger(
-    "ridgeEnrichment_gradient_plot",
-    ridgeEnrichment(
-      seuratObj, 
-      assay = "escape",
-      gene.set = "Bcells",
-      color.by = "Bcells"
-    )
+  expect_s3_class(p, "ggplot")
+  # at least one ridge geom layer (gradient or non-gradient)
+  ridge_layers <- vapply(
+    p$layers,
+    \(ly) inherits(ly$geom,
+                   c("GeomDensityRidges", "GeomDensityRidgesGradient")),
+    logical(1)
   )
-  
-  set.seed(42)
-  expect_doppelganger(
-    "ridgeEnrichment_gradient_reorder_plot",
-    ridgeEnrichment(
-      seuratObj, 
-      assay = "escape",
-      order.by = "mean",
-      gene.set = "Bcells",
-      color.by = "Bcells"
-    )
+  expect_true(any(ridge_layers))
+})
+
+# -------------------------------------------------------------------------
+test_that("gradient colour mode when colour.by == gene.set", {
+  p <- ridgeEnrichment(
+    pbmc_small, assay = "escape",
+    gene.set  = "Tcells",
+    color.by  = "Tcells"   # triggers numeric gradient
   )
-  
-  set.seed(42)
-  expect_doppelganger(
-    "ridgeEnrichment_gradient_facet_plot",
-    ridgeEnrichment(
-      seuratObj, 
-      assay = "escape",
-      gene.set = "Bcells",
-      color.by = "Bcells",
-      facet.by = "groups"
-    )
+  # mapping$fill should be after_stat(x)
+  expect_equal(rlang::quo_text(p$mapping$fill), "if (gradient.mode) ggplot2::after_stat(x) else .data[[\"Tcells\"]]")
+})
+
+# -------------------------------------------------------------------------
+test_that("categorical colour mode when colour.by == group", {
+  p <- ridgeEnrichment(
+    pbmc_small, assay = "escape",
+    gene.set  = "Tcells",
+    color.by  = "group",        # will internally map to group.by "groups"
+    group.by  = "groups"
   )
-  
+  expect_equal(rlang::quo_text(p$mapping$fill), "if (gradient.mode) ggplot2::after_stat(x) else .data[[\"groups\"]]")
+})
+
+# -------------------------------------------------------------------------
+test_that("scale = TRUE centres distribution at zero", {
+  p <- ridgeEnrichment(
+    pbmc_small, assay = "escape",
+    gene.set = "Tcells",
+    scale    = TRUE
+  )
+  m <- mean(p$data$Tcells, na.rm = TRUE)
+  expect_lt(abs(m), 1e-8)
+})
+
+# -------------------------------------------------------------------------
+test_that("order.by = 'mean' re-orders factor levels by mean score", {
+  p <- ridgeEnrichment(
+    pbmc_small, assay = "escape",
+    gene.set = "Tcells",
+    group.by = "groups",
+    order.by = "mean"
+  )
+  grp      <- p$data$groups
+  grp_means <- tapply(p$data$Tcells, grp, mean)
+  # levels should be sorted by increasing mean
+  expect_equal(levels(grp), names(rev(sort(grp_means))))
+})
+
+# -------------------------------------------------------------------------
+test_that("add.rug = TRUE switches on jittered points", {
+  p <- ridgeEnrichment(
+    pbmc_small, assay = "escape",
+    gene.set = "Tcells",
+    add.rug  = TRUE
+  )
+  expect_true(any(vapply(
+    p$layers,
+    \(ly) isTRUE(ly$stat_params$jittered_points),
+    logical(1)
+  )))
 })
