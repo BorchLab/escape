@@ -29,15 +29,14 @@ library(BiocStyle)
 
 For the demonstration of *escape*, we will use the example **"pbmc_small"** data from *Seurat* and also generate a `SingleCellExperiment` object from it.
 
-
 ```{r}
-suppressPackageStartupMessages(library(escape))
-suppressPackageStartupMessages(library(SingleCellExperiment))
-suppressPackageStartupMessages(library(scran))
-suppressPackageStartupMessages(library(Seurat))
-suppressPackageStartupMessages(library(SeuratObject))
-suppressPackageStartupMessages(library(RColorBrewer))
-suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages({
+  pkgs <- c(
+    "escape", "SingleCellExperiment", "scran", "Seurat", "SeuratObject",
+    "RColorBrewer", "ggplot2", "msigdbr"
+  )
+  invisible(lapply(pkgs, library, character.only = TRUE))
+})
 
 
 pbmc_small <- get("pbmc_small")
@@ -63,7 +62,7 @@ In addition, the function supports further subsetting through these parameters:
 
 If your data comes from a species other than Homo sapiens, be sure to use the species parameter (e.g., "Mus musculus") to ensure the correct gene nomenclature is applied.
 
-```{r}
+```{r eval = FALSE}
 GS.hallmark <- getGeneSets(library = "H")
 ```
 
@@ -81,6 +80,16 @@ gene.sets <- list(Bcells = c("MS4A1","CD79B","CD79A","IGH1","IGH2"),
 			            Myeloid = c("SPI1","FCER1G","CSF1R"),
 			            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 ```
+
+## Option 4: Using msigdbr
+
+[msigdbr](https://cran.r-project.org/web/packages/msigdbr/index.html) is an alternative R package to access the Molecular Signature Database in R. There is expanded support for species in the package as well as a mix of accessible versus downloadable gene sets, so it can be faster than caching a copy locally.
+
+```{r eval=FALSE}
+GS.hallmark <- msigdbr(species  = "Homo sapiens",  
+                       category = "H")
+```
+
 
 # Performing Enrichment Calculation
 
