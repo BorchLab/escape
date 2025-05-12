@@ -3,24 +3,21 @@
 #' This function allows to the user to examine the distribution
 #' of principal components run on the enrichment values.
 #'
-#' @param input.data PCA from \code{\link{performPCA}}.
-#' @param dimRed Name of the dimensional reduction to plot if data is a single-cell object.
-#' @param x.axis Component to plot on the x.axis.
-#' @param y.axis Component set to plot on the y.axis.
-#' @param facet.by Variable to facet the plot into n distinct graphs.
-#' @param style Return a \strong{"hex"} bin plot or a \strong{"point"}-based plot.
-#' @param add.percent.contribution Add the relative percent of contribution of the 
-#' selected components to the axis labels.
-#' @param display.factors Add an arrow overlay to show the direction and magnitude of individual 
-#' gene sets on the PCA dimensions.
-#' @param number.of.factors The number of gene.sets to display on the overlay.
-#' @param palette Colors to use in visualization - input any 
-#' \link[grDevices]{hcl.pals}.
-#'
-#' @import ggplot2
-#' @importFrom dplyr slice_max %>%
+#' @return ggplot2 object with PCA distribution
+#' @param input.data  Single‑cell object (Seurat / SCE) **or** the raw list
+#'   returned by [`performPCA()`].
+#' @param dimRed      Name of the dimensional‑reduction slot to pull from a
+#'   single‑cell object.  Ignored when `input.data` is the list output.
+#' @param x.axis,y.axis Character vectors naming the PCs to display (e.g. "PC1").
+#' @param facet.by    Metadata column to facet by (single‑cell objects only).
+#' @param style       "point" (default) or "hex".
+#' @param add.percent.contribution  Include % variance explained in axis labels.
+#' @param display.factors           Draw arrows for the top gene‑set loadings.
+#' @param number.of.factors Integer; how many loadings to display if
+#'   `display.factors = TRUE`.
+#' @param palette     Name passed to [grDevices::hcl.colors()].
 #' 
-#' @examples 
+#' #' @examples 
 #' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 #' pbmc_small <- SeuratObject::pbmc_small
@@ -36,128 +33,116 @@
 #'               y.axis = "PC2",
 #'               dimRed = "escape.PCA")
 #'
+#' @return A **ggplot2** object.
 #' @export
-#'
-#' @return ggplot2 object with PCA distribution
-pcaEnrichment <- function(input.data, 
+pcaEnrichment <- function(input.data,
                           dimRed = NULL,
-                          x.axis = "PC1", 
+                          x.axis = "PC1",
                           y.axis = "PC2",
                           facet.by = NULL,
-                          style = "point",
+                          style = c("point", "hex"),
                           add.percent.contribution = TRUE,
                           display.factors = FALSE,
                           number.of.factors = 10,
                           palette = "inferno") {
   
+  style <- match.arg(style)
   
+  # ------------------------------------------------------------------------
+  # 1. Extract PCA slots ----------------------------------------------------
+  # ------------------------------------------------------------------------
   if (is_seurat_or_se_object(input.data)) {
-    pca.values <- .grabDimRed(input.data, dimRed) 
-  } else if (inherits(input.data, "list") & length(input.data) == 4) {
+    pca.values <- .grabDimRed(input.data, dimRed)
+  } else if (is.list(input.data) && length(input.data) == 4) {
     pca.values <- input.data
-    if(!is.null(facet.by)) {
-      stop("group.by parameter requires input.data to be a single-cell object.")
-    }
+    if (!is.null(facet.by))
+      stop("'facet.by' is only valid with a single‑cell object.")
   } else {
-    stop("input.data does not seem to be a single-cell object or a product of performPCA().")
+    stop("'input.data' must be a Seurat / SCE object or the list from performPCA().")
   }
   
-  x.axis.dim <- as.numeric(substring(x.axis, 3, nchar(x.axis)))
-  y.axis.dim <- as.numeric(substring(y.axis, 3, nchar(y.axis)))
+  # Helper to convert "PC5" → 5 ------------------------------------------------
+  pc_idx <- function(pc) as.integer(sub("PC", "", pc, ignore.case = TRUE))
+  x.idx <- pc_idx(x.axis)
+  y.idx <- pc_idx(y.axis)
   
-  if(add.percent.contribution & length(pca.values) == 4) {
-    x.axis.title <- paste0(x.axis, "\n (", pca.values[[3]][x.axis.dim],"%)")
-    y.axis.title <- paste0(y.axis, "\n (", pca.values[[3]][y.axis.dim],"%)")
+  # Axis labels with % variance ------------------------------------------------
+  if (add.percent.contribution && length(pca.values) == 4) {
+    pc.var <- pca.values[[3]]
+    x.title <- sprintf("%s (%.1f%%)", x.axis, pc.var[x.idx])
+    y.title <- sprintf("%s (%.1f%%)", y.axis, pc.var[y.idx])
   } else {
-    x.axis.title <- x.axis
-    y.axis.title <- y.axis
+    x.title <- x.axis
+    y.title <- y.axis
   }
   
+  # ------------------------------------------------------------------------
+  # 2. Build plotting data.frame -------------------------------------------
+  # ------------------------------------------------------------------------
   plot.df <- as.data.frame(pca.values[[1]])
   
-  if(!is.null(facet.by)) {
-    meta <- .grabMeta(input.data)
-    if(facet.by %!in% colnames(meta)) {
-      stop("Please select a variable in your meta data to use for facet.by.")
-    }
-    col.pos <- ncol(plot.df)
-    plot.df <- cbind.data.frame(plot.df, meta[,facet.by])
-    colnames(plot.df)[col.pos+1] <- facet.by
-  }
-  
-  plot <- ggplot(data = plot.df,
-                 mapping = aes(x = plot.df[,x.axis.dim], 
-                               y = plot.df[,y.axis.dim])) 
-  
-  if(style == "point") {
-    plot <- plot + 
-      geom_pointdensity() + 
-      scale_color_gradientn(colors = .colorizer(palette, 11)) + 
-      labs(color = "Relative Density")
-  } else if (style == "hex") {
-    plot <- plot + 
-      stat_binhex() +
-      scale_fill_gradientn(colors = .colorizer(palette, 11))
-      labs(fill = "Relative Density")
-  }
-  
-  plot <- plot + 
-    ylab(y.axis.title) +
-    xlab(x.axis.title) +
-    theme_classic()
-  
   if (!is.null(facet.by)) {
-    plot <- plot + 
-      facet_grid(as.formula(paste('. ~', facet.by))) 
+    meta <- .grabMeta(input.data)
+    if (!facet.by %in% colnames(meta))
+      stop("'", facet.by, "' not found in object metadata.")
+    plot.df[[facet.by]] <- meta[[facet.by]]
   }
   
-  if(display.factors) {
-    x.range <- range(plot.df[,x.axis.dim])
-    
-    y.range <- range(plot.df[,y.axis.dim])
-    
-    tbl <- data.frame(names = row.names(pca.values[[4]]), 
-                      factors.y = pca.values[[4]][,y.axis.dim]^2/sum(pca.values[[4]][,y.axis.dim]^2),
-                      factors.x = pca.values[[4]][,x.axis.dim]^2/sum(pca.values[[4]][,x.axis.dim]^2)) %>%
-      slice_max(n = number.of.factors, 
-                order_by = (factors.x + factors.y)/2)
-    names <- tbl$names
-    
-    df <- as.data.frame(pca.values[[4]])
-    df <- df[rownames(df) %in% names,]
-    df$names <- rownames(df)
-    if(!is.null(facet.by)) {
-      facets <- sort(unique(plot.df[,facet.by]))
-      df[,facet.by] <- facets[1]
+  # ------------------------------------------------------------------------
+  # 3. Base ggplot ----------------------------------------------------------
+  # ------------------------------------------------------------------------
+  aes.map <- ggplot2::aes(x = plot.df[[x.idx]], y = plot.df[[y.idx]])
+  g <- ggplot2::ggplot(plot.df, aes.map)
+  
+  if (style == "point") {
+    if (!requireNamespace("ggpointdensity", quietly = TRUE)) {
+      warning("Package 'ggpointdensity' not installed – falling back to alpha‑blended points.")
+      g <- g + ggplot2::geom_point(alpha = 0.4, size = 0.6)
+    } else {
+      g <- g + ggpointdensity::geom_pointdensity() +
+        ggplot2::scale_color_gradientn(colors = grDevices::hcl.colors(11, palette)) +
+        ggplot2::labs(color = "Density")
     }
-    
-    plot <- plot + 
-            geom_hline(yintercept = 0, lty=2) + 
-            geom_vline(xintercept = 0, lty=2) +
-            geom_segment(data = df, 
-                         aes(x = 0,
-                             y = 0,
-                             xend = .scale.variable(df[,x.axis.dim], x.range),
-                             yend = .scale.variable(df[,y.axis.dim], y.range)),
-                         arrow = arrow(length = unit(0.25, "cm"))) + 
-            geom_label(data = df, aes(label = names,
-                                      x = .scale.variable(df[,x.axis.dim], x.range),
-                                      y = .scale.variable(df[,y.axis.dim], y.range)), 
-                    size=2, 
-                    hjust = 0.5, 
-                    nudge_y = -0.01,
-                    label.padding = unit(0.1, "lines")) 
+  } else {                                    # hex‑bin
+    if (!requireNamespace("hexbin", quietly = TRUE))
+      stop("'hexbin' package required for style = 'hex'.")
+    g <- g + ggplot2::stat_binhex() +
+      ggplot2::scale_fill_gradientn(colors = grDevices::hcl.colors(11, palette)) +
+      ggplot2::labs(fill = "Count")
   }
   
+  g <- g + ggplot2::labs(x = x.title, y = y.title) + ggplot2::theme_classic()
   
-  return(plot)
-}
-
-# Function to scale the new variable
-.scale.variable <- function(new_var, existing_range) {
-  new_range <- range(new_var)
-  existing_range <- existing_range* 0.8
-  normalized <- (new_var - min(new_range)) / (max(new_range) - min(new_range))
-  scaled <- normalized * (max(existing_range) - min(existing_range)) + min(existing_range)
-  return(scaled)
+  if (!is.null(facet.by))
+    g <- g + ggplot2::facet_grid(stats::as.formula(paste(".~", facet.by)))
+  
+  # ------------------------------------------------------------------------
+  # 4. Biplot arrows --------------------------------------------------------
+  # ------------------------------------------------------------------------
+  if (display.factors) {
+    loadings <- as.data.frame(pca.values[[4]])
+    sel.score <- (loadings[[x.idx]]^2 + loadings[[y.idx]]^2) / 2
+    sel <- head(order(sel.score, decreasing = TRUE), number.of.factors)
+    loadings <- loadings[sel, ]
+    loadings$names <- rownames(loadings)
+    
+    # Rescale onto existing plot range (80 % of extents)
+    rng.x <- range(plot.df[[x.idx]]) * 0.8
+    rng.y <- range(plot.df[[y.idx]]) * 0.8
+    rescale <- function(v, to) (v - min(v)) / diff(range(v)) * diff(to) + min(to)
+    loadings$xend <- rescale(loadings[[x.idx]], rng.x)
+    loadings$yend <- rescale(loadings[[y.idx]], rng.y)
+    
+    g <- g +
+      ggplot2::geom_hline(yintercept = 0, linetype = 2) +
+      ggplot2::geom_vline(xintercept = 0, linetype = 2) +
+      ggplot2::geom_segment(data = loadings,
+                            ggplot2::aes(x = 0, y = 0, xend = xend, yend = yend),
+                            arrow = ggplot2::arrow(length = grid::unit(0.25, "cm"))) +
+      ggplot2::geom_text(data = loadings,
+                         ggplot2::aes(x = xend, y = yend, label = names),
+                         size = 2, vjust = 1.1)
+  }
+  
+  g
 }
