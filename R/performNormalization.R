@@ -6,7 +6,6 @@
 #' positive range and/or applies a natural‑log transform for compatibility with
 #' log‑based differential tests.
 #'
-#' @inheritParams escape.matrix
 #' @param sc.data      Single‑cell object used to generate *raw* enrichment, or a
 #'                     matrix of counts (cells × genes) when `enrichment.data`
 #'                     is supplied.
@@ -23,7 +22,7 @@
 #'                     normalization factors.
 #' @param groups       Chunk size (cells per block) when memory is limited.
 #'
-#' @example 
+#' @examples 
 #' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 #' pbmc_small <- SeuratObject::pbmc_small
