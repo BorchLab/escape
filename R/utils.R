@@ -174,9 +174,12 @@
   if (.is_seurat(sc)) {
     if (requireNamespace("SeuratObject", quietly = TRUE)) {
       major <- as.numeric(substr(sc@version, 1, 1))
-      fn    <- if (major >= 5) SeuratObject::CreateAssay5Object
-      else SeuratObject::CreateAssayObject
-      sc[[name]] <- fn(data = as.matrix(t(enrichment)))
+      fn    <- if (major >= 5) {
+        SeuratObject::CreateAssay5Object
+      } else  {
+        SeuratObject::CreateAssayObject
+      }
+      suppressWarnings(sc[[name]] <- fn(data = as.matrix(t(enrichment))))
     }
   } else if (.is_sce(sc)) {
     altExp(sc, name) <- SummarizedExperiment::SummarizedExperiment(assays = list(data = t(enrichment)))

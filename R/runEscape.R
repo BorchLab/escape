@@ -107,12 +107,12 @@ escape.matrix <- function(input.data,
   
   # ---- 3) split cells into chunks -------------------------------------------
   chunks <- .split_cols(cnts, groups)
-  message("escape_matrix(): processing ", length(chunks), " chunk(s)…")
+  message("escape.matrix(): processing ", length(chunks), " chunk(s)…")
   
   # ---- 4) compute enrichment in parallel ------------------------------------
   res_list <- BiocParallel::bplapply(
     chunks,
-    function(mat) .compute_enrichment(mat, egc, method, BPPARAM, ...),
+    function(mat) .compute_enrichment(mat, egc, method, BPPARAM), #, ...),
     BPPARAM = BPPARAM
   )
   
@@ -188,7 +188,7 @@ runEscape <- function(input.data,
                       ...) {
     method <- match.arg(method)
     .checkSingleObject(input.data)
-    esc <- escape_matrix(input.data, gene.sets, method, groups, min.size,
+    esc <- escape.matrix(input.data, gene.sets, method, groups, min.size,
                          normalize, make.positive, min.expr.cells, 
                          min.filter.by, BPPARAM, ...)
     .adding.Enrich(input.data, esc, new.assay.name)
@@ -197,19 +197,6 @@ runEscape <- function(input.data,
     return(input.data)
 }
 
-.gsva.setup <- function(data, egc) {
-  params.to.use <- gsvaParam(exprData = data,
-                             geneSets = egc,
-                             kcdf = "Poisson")
-  return(params.to.use)
-}
-
-.ssGSEA.setup <- function(data, egc) {
-  params.to.use <- ssgseaParam(exprData = data,
-                               geneSets = egc,
-                               normalize = FALSE)
-  return(params.to.use)
-}
 
 .filter_genes <- function(m, min.expr.cells) {
   if (is.null(min.expr.cells) || identical(min.expr.cells, 0))
