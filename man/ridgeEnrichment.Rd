@@ -6,9 +6,9 @@
 \usage{
 ridgeEnrichment(
   input.data,
+  gene.set,
   assay = NULL,
   group.by = NULL,
-  gene.set = NULL,
   color.by = "group",
   order.by = NULL,
   scale = FALSE,
@@ -18,59 +18,46 @@ ridgeEnrichment(
 )
 }
 \arguments{
-\item{input.data}{Enrichment output from \code{\link{escape.matrix}} or
-\code{\link{runEscape}}.}
+\item{input.data}{Enrichment output from [escape.matrix()] or
+a single-cell object produced by [runEscape()].}
 
-\item{assay}{Name of the assay to plot if data is a single-cell object.}
+\item{gene.set}{Gene-set (column) to plot **(length 1)**.}
 
-\item{group.by}{Categorical parameter to plot along the x.axis. If input is
-a single-cell object the default will be cluster.}
+\item{assay}{Assay name if `input.data` is a single-cell object.}
 
-\item{gene.set}{Gene set to plot (on y-axis).}
+\item{group.by}{Metadata column for the y-axis groups
+(default `"ident"` in Seurat / SCE).}
 
-\item{color.by}{How the color palette applies to the graph - can 
-be \strong{"group"} for a categorical color palette based on the 
-\strong{group.by} parameter or use the \strong{gene.set} name if wanting to 
-apply a gradient palette.}
+\item{color.by}{Either `"group"` (use `group.by` colours) or the
+name of a numeric column to map to a fill gradient.}
 
-\item{order.by}{Method to organize the x-axis: \strong{"mean"} will arrange
-the x-axis by the mean of the gene.set, while \strong{"group"} will arrange
-the x-axis by in alphanumerical order. Using \strong{NULL} will not reorder
-the x-axis.}
+\item{order.by}{`"mean"` | `"group"` | `NULL`.  Re-orders `group.by`
+factor by mean score or alphanumerically.}
 
-\item{scale}{Visualize raw values \strong{FALSE} or Z-transform 
-enrichment values \strong{TRUE}.}
+\item{scale}{Logical.  Z-transform the selected `gene.set`.}
 
-\item{facet.by}{Variable to facet the plot into n distinct graphs.}
+\item{facet.by}{Optional column to facet (`. ~ facet.by`).}
 
-\item{add.rug}{Add visualization of the discrete cells along
-the ridge plot (\strong{TRUE}).}
+\item{add.rug}{Draw per-cell tick marks underneath each ridge.}
 
-\item{palette}{Colors to use in visualization - input any 
-\link[grDevices]{hcl.pals}.}
+\item{palette}{Palette passed to [grDevices::hcl.colors()].}
 }
 \value{
-ggplot2 object with ridge-based distributions of selected gene.set
+A [ggplot2] object.
 }
 \description{
 This function allows to the user to examine the distribution of 
 enrichment across groups by generating a ridge plot.
 }
 \examples{
-GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
-           Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
-pbmc_small <- SeuratObject::pbmc_small
-pbmc_small <- runEscape(pbmc_small, 
-                        gene.sets = GS, 
-                        min.size = NULL)
-                        
-ridgeEnrichment(pbmc_small, 
-                assay = "escape",
-                gene.set = "Tcells")
-                
-ridgeEnrichment(pbmc_small, 
-                assay = "escape",
-                gene.set = "Tcells", 
-                color.by = "Tcells")
+gs <- list(
+  B = c("MS4A1","CD79A","CD79B"),
+  T = c("CD3D","CD3E","CD3G","CD7")
+)
+pbmc <- SeuratObject::pbmc_small |>
+  runEscape(gene.sets = gs, min.size = NULL)
 
+ridgeEnrichment(pbmc, assay = "escape",
+                gene.set = "T",
+                group.by = "groups")
 }

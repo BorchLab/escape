@@ -6,28 +6,26 @@
 \usage{
 densityEnrichment(
   input.data,
-  gene.set.use = NULL,
-  gene.sets = NULL,
+  gene.set.use,
+  gene.sets,
   group.by = NULL,
   palette = "inferno"
 )
 }
 \arguments{
-\item{input.data}{The single-cell object to use.}
+\item{input.data}{A *Seurat* or *SummarizedExperiment* object.}
 
-\item{gene.set.use}{Selected individual gene set.}
+\item{gene.set.use}{Character(1).  Name of the gene set to display.}
 
-\item{gene.sets}{The gene set library to use to extract 
-the individual gene set information from.}
+\item{gene.sets}{Named list or `GeneSetCollection` supplying the sets.}
 
-\item{group.by}{Categorical parameter to plot along the x.axis. If input is
-a single-cell object the default will be cluster.}
+\item{group.by}{Metadata column used to define groups (default `"ident"`).}
 
-\item{palette}{Colors to use in visualization - input any 
-\link[grDevices]{hcl.pals}.}
+\item{palette}{Colour palette from \link[grDevices]{hcl.colors}
+(default `"inferno"`).}
 }
 \value{
-ggplot2 object mean rank gene density across groups
+A `patchwork`/`ggplot2` object.
 }
 \description{
 This function allows to the user to examine the mean ranking

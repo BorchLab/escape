@@ -2,62 +2,83 @@
 % Please edit documentation in R/scatterEnrichment.R
 \name{scatterEnrichment}
 \alias{scatterEnrichment}
-\title{Generate a density-based scatter plot}
+\title{Density-aware scatter plot of two gene-set scores}
 \usage{
 scatterEnrichment(
   input.data,
   assay = NULL,
-  x.axis = NULL,
-  y.axis = NULL,
-  scale = FALSE,
+  x.axis,
+  y.axis,
   facet.by = NULL,
-  style = "point",
-  palette = "inferno"
+  group.by = NULL,
+  color.by = c("density", "group", "x", "y"),
+  style = c("point", "hex"),
+  scale = FALSE,
+  bins = 40,
+  point.size = 1.2,
+  alpha = 0.8,
+  palette = "inferno",
+  add.corr = FALSE
 )
 }
 \arguments{
-\item{input.data}{Enrichment output from \code{\link{escape.matrix}} or
-\code{\link{runEscape}}.}
+\item{input.data}{Output of \code{\link{escape.matrix}} or an object
+previously processed with \code{\link{runEscape}}.}
 
-\item{assay}{Name of the assay to plot if data is a single-cell object.}
+\item{assay}{Name of the assay storing enrichment scores when
+`input.data` is a single-cell object.  Ignored for plain matrices.}
 
-\item{x.axis}{Gene set to plot on the x.axis.}
+\item{x.axis, y.axis}{Gene-set names to plot on the *x* and *y* axes.}
 
-\item{y.axis}{Gene set to plot on the y.axis.
-\strong{group.by} parameter or use the \strong{gene.set} name if wanting to 
-apply a gradient palette.}
+\item{facet.by}{Optional metadata column used to create separate panels
+(`facet_grid(. ~ facet.by)`).}
 
-\item{scale}{Visualize raw values \strong{FALSE} or Z-transform 
-enrichment values \strong{TRUE}.}
+\item{group.by}{Metadata column used for discrete coloring
+(`color.by = "group"`).  Defaults to `"ident"`.}
 
-\item{facet.by}{Variable to facet the plot into n distinct graphs.}
+\item{color.by}{One of `"density"` (default), `"group"`, `"x"`, or `"y"`.
+The latter two apply a continuous gradient to the corresponding axis.}
 
-\item{style}{Return a \strong{"hex"} bin plot or a \strong{"point"}-based plot.}
+\item{style}{`"point"` (density-aware points) or `"hex"` (hex-bin).}
 
-\item{palette}{Colors to use in visualization - input any 
-\link[grDevices]{hcl.pals}.}
+\item{scale}{Logical.  Z-transform each gene-set column before
+plotting.}
+
+\item{bins}{Number of hex bins along each axis when `style = "hex"`.}
+
+\item{point.size, alpha}{Aesthetic tweaks for `style = "point"`.}
+
+\item{palette}{Any palette from \link[grDevices]{hcl.pals} (default
+`"inferno"`).}
+
+\item{add.corr}{Logical.  Add Pearson and Spearman correlation
+coefficients (top-left corner of the first facet).}
 }
 \value{
-ggplot2 object with a scatter plot of selected gene.sets
+A \pkg{ggplot2} object.
 }
 \description{
-This function allows to the user to examine the distribution of 
-2 gene sets along the x.axis and y.axis. The color gradient
-is generated using the a density estimate. See 
-\href{https://github.com/LKremer/ggpointdensity}{ggpointdensity})
-for more information.
+Visualize the relationship between *two* enrichment scores at single-cell
+resolution.  By default points are shaded by local 2-D density
+(`color.by = "density"`), but users can instead color by a metadata column
+(discrete) or by the raw gene-set scores themselves (continuous).
 }
 \examples{
-GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
-           Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
-pbmc_small <- SeuratObject::pbmc_small
-pbmc_small <- runEscape(pbmc_small, 
-                        gene.sets = GS, 
-                        min.size = NULL)
-                        
-scatterEnrichment(pbmc_small, 
-                  assay = "escape",
-                  x.axis = "Tcells",
-                  y.axis = "Bcells")
+gs <- list(
+  Bcells = c("MS4A1","CD79B","CD79A","IGH1","IGH2"),
+  Tcells = c("CD3E","CD3D","CD3G","CD7","CD8A")
+)
+pbmc <- SeuratObject::pbmc_small |>
+  runEscape(gene.sets = gs, min.size = NULL)
 
+scatterEnrichment(
+  pbmc,
+  assay     = "escape",
+  x.axis    = "Tcells",
+  y.axis    = "Bcells",
+  color.by  = "group",        
+  group.by  = "groups",
+  add.corr  = TRUE,
+  point.size = 1
+)
 }

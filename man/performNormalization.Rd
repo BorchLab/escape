@@ -15,37 +15,37 @@ performNormalization(
 )
 }
 \arguments{
-\item{sc.data}{Single-cell object or matrix used in the gene set enrichment calculation in 
-\code{\link{escape.matrix}} or \code{\link{runEscape}}.}
+\item{sc.data}{Single‑cell object used to generate *raw* enrichment, or a
+matrix of counts (cells × genes) when `enrichment.data`
+is supplied.}
 
-\item{enrichment.data}{The enrichment results from \code{\link{escape.matrix}} 
-or \code{\link{runEscape}} (optional)}
+\item{enrichment.data}{Matrix with raw enrichment scores (cells × gene sets).
+Required when `sc.data` is a plain matrix.}
 
-\item{assay}{Name of the assay to normalize if using a single-cell object}
+\item{assay}{Name of the assay to read/write inside `sc.data` when it
+is a Seurat / SCE object. Default is "escape".}
 
-\item{gene.sets}{The gene set library to use to extract 
-the individual gene set information from}
+\item{gene.sets}{The gene‑set definitions originally used. Needed to count
+expressed genes per set.}
 
-\item{make.positive}{Shift enrichment values to a positive range \strong{TRUE}
-for downstream analysis or not \strong{TRUE} (default).}
+\item{make.positive}{Logical; if `TRUE` shifts each column so its minimum is
+zero.}
 
-\item{scale.factor}{A vector to use for normalizing enrichment scores per cell.}
+\item{scale.factor}{Optional numeric vector overriding gene‑count scaling
+(length = #cells). Use when you want external per‑cell
+normalization factors.}
 
-\item{groups}{the number of cells to calculate normalization on at once.
-chunks matrix into groups sized chunks. Useful in case of memory issues.}
+\item{groups}{Chunk size (cells per block) when memory is limited.}
 }
 \value{
-Single-cell object or matrix of normalized enrichment scores
+If `sc.data` is an object, the same object with a new assay
+        "<assay>_normalized". Otherwise a matrix of normalized scores.
 }
 \description{
-This function allows users to normalize the enrichment calculations 
-by accounting for single-cell dropout and producing positive 
-values for downstream differential enrichment analyses. Default calculation 
-uses will scale the enrichment values by the number of genes present from 
-the gene set and then use a natural log transformation. A positive range
-values is useful for several downstream analyses, like differential 
-evaluation for log2-fold change, but will alter the original 
-enrichment values.
+Scales each enrichment value by the **number of genes from the set that are
+expressed** in that cell (non‑zero counts). Optionally shifts results into a
+positive range and/or applies a natural‑log transform for compatibility with
+log‑based differential tests.
 }
 \examples{
 GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),

@@ -6,31 +6,33 @@
 \usage{
 performPCA(
   input.data,
-  assay = NULL,
+  assay = "escape",
   scale = TRUE,
-  n.dim = 1:10,
+  n.dim = 10,
   reduction.name = "escape.PCA",
-  reduction.key = "PCA"
+  reduction.key = "escPC_"
 )
 }
 \arguments{
-\item{input.data}{Enrichment output from \code{\link{escape.matrix}} or
-\code{\link{runEscape}}.}
+\item{input.data}{Numeric matrix (cells × gene sets) **or** a single-cell
+object containing an “escape” assay.}
 
-\item{assay}{Name of the assay to plot if data is a single-cell object.}
+\item{assay}{Name of the assay to pull from a single-cell object
+(default `"escape"`).}
 
-\item{scale}{Standardize the enrichment value (\strong{TRUE}) or 
-not (\strong{FALSE})}
+\item{scale}{Logical; if `TRUE` standardises each gene-set column
+before PCA.}
 
-\item{n.dim}{The number of components to calculate.}
+\item{n.dim}{Integer ≥1 or vector; the **largest** value sets the
+number of principal components to compute / keep.}
 
-\item{reduction.name}{Name of the reduced dimensions object to add if 
-data is a single-cell object.}
-
-\item{reduction.key}{Name of the key to use with the components.}
+\item{reduction.name, }{reduction.key  Names used when writing back to a
+Seurat / SCE object.}
 }
 \value{
-single-cell object or list with PCA components to plot.
+*If* `input.data` is a single-cell object, the same object with a
+  new dimensional-reduction slot.  *Otherwise* a list with  
+  `PCA`, `eigen_values`, `contribution`, and `rotation`.
 }
 \description{
 This function allows users to calculate the principal components 
