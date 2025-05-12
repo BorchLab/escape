@@ -42,11 +42,12 @@ heatmapEnrichment <- function(input.data,
                               facet.by       = NULL,
                               scale          = FALSE,
                               summary.stat   = "mean",
-                              palette        = "inferno") {
-  #---------------------- helper: match/validate summary function -------------
+                              palette        = "inferno")
+{
+  # ---------- 1. helper to match summary function -------------------------
   .match_summary_fun <- function(fun) {
     if (is.function(fun)) return(fun)
-    if (!is.character(fun) || length(fun) != 1L)
+    if (!is.character(fun) || length(fun) != 1)
       stop("'summary.stat' must be a single character keyword or a function")
     kw <- tolower(fun)
     fn <- switch(kw,
@@ -58,66 +59,64 @@ heatmapEnrichment <- function(input.data,
                  min       = base::min,
                  geometric = function(x) exp(mean(log(x + 1e-6))),
                  stop("Unsupported summary keyword: ", fun))
-    attr(fn, "keyword") <- kw
     fn
   }
   summary_fun <- .match_summary_fun(summary.stat)
   
-  #---------------------- defaults & data extraction --------------------------
+  # ---------- 2. pull / tidy data -----------------------------------------
   if (is.null(group.by)) group.by <- "ident"
-  df <- .prepData(input.data, assay, gene.set.use, group.by, NULL, facet.by)
+  df <- .prepData(input.data, assay, gene.set.use,
+                  group.by = group.by,
+                  split.by = NULL,
+                  facet.by = facet.by)
   
-  # determine gene‑set columns ------------------------------------------------
-  if (identical(gene.set.use, "all")) {
+  # Which columns contain gene-set scores?
+  if (identical(gene.set.use, "all"))
     gene.set <- setdiff(colnames(df), c(group.by, facet.by))
-  } else {
+  else
     gene.set <- gene.set.use
-  }
   if (!length(gene.set))
-    stop("No gene‑set columns found to plot.")
+    stop("No gene-set columns found to plot.")
   
-  #---------------------- summarise ------------------------------------------
-  if (is.null(facet.by)) {
-    grp <- df[[group.by]]
-    agg <- aggregate(df[gene.set], by = list(!!group.by := grp), FUN = summary_fun)
-  } else {
-    grp  <- df[[group.by]]
-    fac  <- df[[facet.by]]
-    agg  <- aggregate(df[gene.set],
-                      by = list(!!group.by := grp, !!facet.by := fac),
-                      FUN = summary_fun)
-  }
+  # ---------- 3. summarise with **base aggregate()** ----------------------
+  grp_cols   <- c(group.by, facet.by)               # one or two columns
+  agg <- aggregate(df[gene.set],
+                   by   = df[grp_cols],
+                   FUN  = summary_fun,
+                   SIMPLIFY = FALSE)
+  # aggregate() keeps grouping columns first; ensure correct names
+  names(agg)[seq_along(grp_cols)] <- grp_cols
   
-  # option: Z‑transform per gene‑set column ----------------------------------
-  if (scale) {
-    agg[gene.set] <- lapply(agg[gene.set], function(col) as.numeric(scale(col)))
-  }
+  # Optional Z-transform AFTER summary
+  if (scale)
+    agg[gene.set] <- lapply(agg[gene.set], scale)
   
-  #---------------------- reshape for ggplot (base R) -------------------------
+  # ---------- 4. long format for ggplot (base-R) --------------------------
   long <- data.frame(
     variable = rep(gene.set, each = nrow(agg)),
     value    = as.vector(t(agg[gene.set])),
     group    = rep(agg[[group.by]], times = length(gene.set)),
     stringsAsFactors = FALSE
   )
-  if (!is.null(facet.by)) long[[facet.by]] <- rep(agg[[facet.by]], times = length(gene.set))
+  if (!is.null(facet.by))
+    long[[facet.by]] <- rep(agg[[facet.by]], times = length(gene.set))
   
-  #---------------------- optional clustering --------------------------------
+  # ---------- 5. optional clustering --------------------------------------
   if (cluster.rows) {
     ord <- hclust(dist(t(agg[gene.set])), method = "ward.D2")$order
     long$variable <- factor(long$variable, levels = gene.set[ord])
   }
   if (cluster.columns) {
     ord <- hclust(dist(agg[gene.set]), method = "ward.D2")$order
-    col_levels <- agg[[group.by]][ord]
-    long$group <- factor(long$group, levels = col_levels)
+    long$group <- factor(long$group, levels = agg[[group.by]][ord])
   }
   
-  #---------------------- build ggplot ---------------------------------------
-  p <- ggplot2::ggplot(long, ggplot2::aes(x = group, y = variable, fill = value)) +
-    ggplot2::geom_tile(color = "black", linewidth = 0.4) +
+  # ---------- 6. draw ------------------------------------------------------
+  p <- ggplot2::ggplot(long,
+                       ggplot2::aes(x = group, y = variable, fill = value)) +
+    ggplot2::geom_tile(colour = "black", linewidth = 0.4) +
     ggplot2::scale_fill_gradientn(colours = .colorizer(palette, 11),
-                                  name   = "Enrichment") +
+                                  name = "Enrichment") +
     ggplot2::scale_x_discrete(expand = c(0, 0)) +
     ggplot2::scale_y_discrete(expand = c(0, 0)) +
     ggplot2::coord_equal() +
@@ -126,8 +125,9 @@ heatmapEnrichment <- function(input.data,
                    axis.ticks      = ggplot2::element_blank(),
                    legend.position = "bottom",
                    legend.direction= "horizontal")
-  if (!is.null(facet.by)) {
+  
+  if (!is.null(facet.by))
     p <- p + ggplot2::facet_grid(stats::as.formula(paste(". ~", facet.by)))
-  }
+  
   p
 }
