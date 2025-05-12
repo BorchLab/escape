@@ -8,20 +8,17 @@
 #' workflow in lieu of using \code{\link{performPCA}}, but will not be 
 #' compatible with downstream \code{\link{pcaEnrichment}} visualization.
 #'
-#' @param input.data Enrichment output from \code{\link{escape.matrix}} or
-#' \code{\link{runEscape}}.
-#' @param assay Name of the assay to plot if data is a single-cell object.
-#' @param scale Standardize the enrichment value (\strong{TRUE}) or 
-#' not (\strong{FALSE})
-#' @param n.dim The number of components to calculate.
-#' @param reduction.name Name of the reduced dimensions object to add if 
-#' data is a single-cell object.
-#' @param reduction.key Name of the key to use with the components.
-#'
-#' @importFrom stats prcomp
-#' @importFrom SeuratObject CreateDimReducObject
-#' @importFrom SingleCellExperiment reducedDim reducedDim<-
-#' 
+#' @param input.data    Numeric matrix (cells × gene sets) **or** a single-cell
+#'   object containing an “escape” assay.
+#' @param assay         Name of the assay to pull from a single-cell object
+#'   (default `"escape"`).
+#' @param scale         Logical; if `TRUE` standardises each gene-set column
+#'   before PCA.
+#' @param n.dim         Integer ≥1 or vector; the **largest** value sets the
+#'   number of principal components to compute / keep.
+#' @param reduction.name, reduction.key  Names used when writing back to a
+#'   Seurat / SCE object.
+#'   
 #' @examples
 #' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
@@ -33,59 +30,72 @@
 #' pbmc_small <- performPCA(pbmc_small, 
 #'                          assay = "escape")
 #'
+#' @return *If* `input.data` is a single-cell object, the same object with a
+#'   new dimensional-reduction slot.  *Otherwise* a list with  
+#'   `PCA`, `eigen_values`, `contribution`, and `rotation`.
 #' @export
-#' 
-#' @return single-cell object or list with PCA components to plot.
 performPCA <- function(input.data,
-                       assay = NULL,
-                       scale = TRUE,
-                       n.dim = 1:10,
-                       reduction.name = "escape.PCA",
-                       reduction.key = "PCA") {
+                       assay           = "escape",
+                       scale           = TRUE,
+                       n.dim           = 10,
+                       reduction.name  = "escape.PCA",
+                       reduction.key   = "escPC_") {
   
-  if(is_seurat_or_se_object(input.data)) {
-    enriched <- .pull.Enrich(input.data, assay)
+  ## ------------ 1  Get enrichment matrix ------------------------------------
+  if (.is_seurat_or_sce(input.data)) {
+    mat <- .pull.Enrich(input.data, assay)
+  } else if (is.matrix(input.data) || is.data.frame(input.data)) {
+    mat <- as.matrix(input.data)
   } else {
-    enriched <- input.data
+    stop("`input.data` must be a matrix/data.frame or a Seurat/SCE object.")
+  }
+  if (!is.numeric(mat)) stop("Enrichment matrix must be numeric.")
+  
+  ## ------------ 2  Choose PCA backend ---------------------------------------
+  ndim <- max(as.integer(n.dim))
+  use_irlba <- requireNamespace("irlba", quietly = TRUE) &&
+    min(dim(mat)) > 50                     # heuristic
+  
+  pca_obj <- if (use_irlba) {
+    irlba::prcomp_irlba(mat, n = ndim, center = TRUE, scale. = scale)
+  } else {
+    stats::prcomp(mat, rank. = ndim, center = TRUE, scale. = scale)
   }
   
-  PCA <- prcomp(enriched, 
-                scale. = scale,
-                rank. = max(n.dim))
-  rotation <- PCA$rotation
-  eigen.values <- PCA$sdev^2
-  percent.contribution <- round((eigen.values/sum(eigen.values))*100,1)
-  PCA <- PCA$x
-  colnames(PCA) <- paste0(reduction.key, "_", seq_len(ncol(PCA)))
+  ## ------------ 3  Post-process ---------------------------------------------
+  eig  <- pca_obj$sdev ^ 2
+  pct  <- round(eig / sum(eig) * 100, 1)
+  colnames(pca_obj$x) <- paste0(reduction.key, seq_len(ncol(pca_obj$x)))
   
-  additional.data <- list(eigen_values = eigen.values,
-                          contribution = percent.contribution, 
-                          rotation = rotation)
-  if(is_seurat_or_se_object(input.data)) {
-    if (inherits(input.data, "Seurat")) {
-      DR <- suppressWarnings(CreateDimReducObject(
-                            embeddings = PCA,
-                            stdev = rep(0, ncol(PCA)),
-                            key = reduction.key,
-                            jackstraw = NULL,
-                            misc = additional.data))
-      input.data[[reduction.name]] <- DR
-    } else if (inherits(input.data, "SingleCellExperiment")) {
-      reducedDim(input.data, reduction.name) <- PCA
-      if(length(input.data@metadata) == 0) {
-        input.data@metadata <- additional.data
-      } else {
-        input.data@metadata <- c(input.data@metadata, additional.data)
-      }
+  misc <- list(eigen_values = eig,
+               contribution = pct,
+               rotation      = pca_obj$rotation)
+  
+  ## ------------ 4  Return / write-back --------------------------------------
+  if (.is_seurat_or_sce(input.data)) {
     
-    } 
+    if (.is_seurat(input.data)) {
+      if (!requireNamespace("SeuratObject", quietly = TRUE))
+        stop("Package 'SeuratObject' is required to write PCA results.")
+      input.data[[reduction.name]] <- SeuratObject::CreateDimReducObject(
+        embeddings = pca_obj$x,
+        loadings   = pca_obj$rotation,
+        stdev      = pca_obj$sdev,
+        key        = reduction.key,
+        misc       = misc, 
+        assay      = assay
+      )
+      
+    } else {  # SingleCellExperiment
+      SingleCellExperiment::reducedDim(input.data, reduction.name) <- pca_obj$x
+      input.data@metadata <- c(input.data@metadata, misc)
+    }
     return(input.data)
+    
   } else {
-    PCA.results <- list(PCA = PCA,
-                        eigen_values = eigen.values,
-                        contribution = percent.contribution,
-                        rotation = rotation)
-    return(PCA.results)
+    list(PCA          = pca_obj$x,
+         eigen_values = eig,
+         contribution = pct,
+         rotation     = pca_obj$rotation)
   }
-  
 }
