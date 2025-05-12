@@ -81,15 +81,15 @@ performNormalization <- function(sc.data,
     rm(cnts)
     ## optionally split large matrices to spare memory
     chunksize <- if (is.null(groups)) nrow(enriched) else min(groups, nrow(enriched))
-    sf.split  <- .split_rows(scale.mat, chunk = chunksize)
+    sf.split  <- .split_rows(scale.mat, chunk.size  = chunksize)
   } else {
-    sf.split  <- .split_vector(scale.factor, chunk = if (is.null(groups)) length(scale.factor) else min(groups, length(scale.factor)))
+    sf.split  <- .split_vector(scale.factor, chunk.size = if (is.null(groups)) length(scale.factor) else min(groups, length(scale.factor)))
   }
   
   ## ----------------------------------------------------------------------
   ## 3. Chunked normalisation --------------------------------------------
   message("Normalising enrichment scores …")
-  en.split <- .split_rows(enriched, chunk = if (is.null(groups)) nrow(enriched) else min(groups, nrow(enriched)))
+  en.split <- .split_rows(enriched, chunk.size = if (is.null(groups)) nrow(enriched) else min(groups, nrow(enriched)))
   norm.lst <- Map(function(sco, fac) sco / fac, en.split, sf.split)
   normalized <- do.call(rbind, norm.lst)
   

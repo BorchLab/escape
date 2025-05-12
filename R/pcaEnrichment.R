@@ -3,16 +3,15 @@
 #' This function allows to the user to examine the distribution
 #' of principal components run on the enrichment values.
 #'
-#' @return ggplot2 object with PCA distribution
-#' @param input.data  Single‑cell object (Seurat / SCE) **or** the raw list
+#' @param input.data Single‑cell object (Seurat / SCE) **or** the raw list
 #'   returned by [`performPCA()`].
-#' @param dimRed      Name of the dimensional‑reduction slot to pull from a
+#' @param dimRed Name of the dimensional‑reduction slot to pull from a
 #'   single‑cell object.  Ignored when `input.data` is the list output.
 #' @param x.axis,y.axis Character vectors naming the PCs to display (e.g. "PC1").
-#' @param facet.by    Metadata column to facet by (single‑cell objects only).
-#' @param style       "point" (default) or "hex".
+#' @param facet.by Metadata column to facet by (single‑cell objects only).
+#' @param style "point" (default) or "hex".
 #' @param add.percent.contribution  Include % variance explained in axis labels.
-#' @param display.factors           Draw arrows for the top gene‑set loadings.
+#' @param display.factors Draw arrows for the top gene‑set loadings.
 #' @param number.of.factors Integer; how many loadings to display if
 #'   `display.factors = TRUE`.
 #' @param palette     Name passed to [grDevices::hcl.colors()].
@@ -51,7 +50,7 @@ pcaEnrichment <- function(input.data,
   # ------------------------------------------------------------------------
   # 1. Extract PCA slots ----------------------------------------------------
   # ------------------------------------------------------------------------
-  if (is_seurat_or_se_object(input.data)) {
+  if (.is_seurat_or_sce(input.data)) {
     pca.values <- .grabDimRed(input.data, dimRed)
   } else if (is.list(input.data) && length(input.data) == 4) {
     pca.values <- input.data
@@ -91,7 +90,7 @@ pcaEnrichment <- function(input.data,
   # ------------------------------------------------------------------------
   # 3. Base ggplot ----------------------------------------------------------
   # ------------------------------------------------------------------------
-  aes.map <- ggplot2::aes(x = plot.df[[x.idx]], y = plot.df[[y.idx]])
+  aes.map <- ggplot2::aes(x = plot.df[,x.idx], y = plot.df[,y.idx])
   g <- ggplot2::ggplot(plot.df, aes.map)
   
   if (style == "point") {
@@ -120,7 +119,7 @@ pcaEnrichment <- function(input.data,
   # 4. Biplot arrows --------------------------------------------------------
   # ------------------------------------------------------------------------
   if (display.factors) {
-    loadings <- as.data.frame(pca.values[[4]])
+    loadings <- as.data.frame(pca.values[[2]][[3]])
     sel.score <- (loadings[[x.idx]]^2 + loadings[[y.idx]]^2) / 2
     sel <- head(order(sel.score, decreasing = TRUE), number.of.factors)
     loadings <- loadings[sel, ]

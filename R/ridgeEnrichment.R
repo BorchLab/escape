@@ -9,7 +9,7 @@
 #' @param assay       Assay name if `input.data` is a single-cell object.
 #' @param group.by    Metadata column for the y-axis groups
 #'   (default `"ident"` in Seurat / SCE).
-#' @param color.by    Either `"group"` (use `group.by` colours) or the
+#' @param color.by    Either `"group"` (use `group.by` colors) or the
 #'   name of a numeric column to map to a fill gradient.
 #' @param order.by    `"mean"` | `"group"` | `NULL`.  Re-orders `group.by`
 #'   factor by mean score or alphanumerically.
@@ -63,15 +63,21 @@ ridgeEnrichment <- function(input.data,
   if (!is.null(order.by))
     df <- .orderFunction(df, order.by, group.by)
   
-  ## detect “gradient” mode (numeric colour mapped to x) -----------------
+  ## detect “gradient” mode (numeric color mapped to x) -----------------
   gradient.mode <-
     is.numeric(df[[color.by]]) && identical(color.by, gene.set)
   
+  if(gradient.mode) {
+    fill <- ggplot2::after_stat(x)
+  } else {
+    fill <- df[,color.by]
+  }
+  
   ## ---- 2  base ggplot --------------------------------------------------
   aes_base <- ggplot2::aes(
-    x    = .data[[gene.set]],
-    y    = .data[[group.by]],
-    fill = if (gradient.mode) ggplot2::after_stat(x) else .data[[color.by]]
+    x    = df[,gene.set],
+    y    = df[,group.by],
+    fill = fill
   )
   
   p <- ggplot2::ggplot(df, aes_base)

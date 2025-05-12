@@ -5,7 +5,7 @@
 #'
 #' @param input.data A single‑cell object (\pkg{Seurat} /
 #'   \pkg{SummarizedExperiment}) **or** a data.frame/matrix containing
-#'   enrichment values (cells × gene‑sets).
+#'   enrichment values (cells × gene‑sets).
 #' @param assay Name of the assay holding enrichment scores when
 #'   `input.data` is a single‑cell object. Ignored otherwise.
 #' @param group.by Metadata column plotted on the *x*‑axis.  Defaults to the
@@ -18,9 +18,9 @@
 #'   gradient.  Any other metadata or column present in the data is also
 #'   accepted.
 #' @param order.by How to arrange the x‑axis:
-#'   *`"mean"`* – groups ordered by decreasing group mean;
-#'   *`"group"`* – natural sort of group labels;
-#'   *`NULL`* – keep original ordering.
+#'   *`"mean"`* – groups ordered by decreasing group mean;
+#'   *`"group"`* – natural sort of group labels;
+#'   *`NULL`* – keep original ordering.
 #' @param facet.by Optional metadata column used to facet the plot.
 #' @param scale Logical; if `TRUE` scores are centred/scaled (Z‑score) prior
 #'   to plotting.
@@ -32,8 +32,7 @@
 #' @examples
 #' gs <- list(Bcells = c("MS4A1","CD79B","CD79A"),
 #'            Tcells = c("CD3E","CD3D","CD3G","CD7","CD8A"))
-#' p
-#' bmc <- SeuratObject::pbmc_small |>
+#' pbmc <- SeuratObject::pbmc_small |>
 #'   runEscape(gene.sets = gs,
 #'             min.size = NULL)
 #'

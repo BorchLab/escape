@@ -56,8 +56,6 @@ pcaEnrichment(pbmc_small,
               dimRed = "escape.PCA")}
 }
 \value{
-ggplot2 object with PCA distribution
-
 A **ggplot2** object.
 }
 \description{

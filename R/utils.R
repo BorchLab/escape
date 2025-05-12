@@ -160,7 +160,7 @@
   } else if (.is_sce(obj)) {
     pos <- if (assay == "RNA") "counts" else assay
     cnts <- if (assay == "RNA") SummarizedExperiment::assay(obj, pos)
-    else SummarizedExperiment::assay(SingleCellExperiment::altExp(obj), pos)
+    else SummarizedExperiment::assay(SingleCellExperiment::altExp(obj, pos))
   } else {
     cnts <- obj
   }
@@ -182,7 +182,7 @@
       suppressWarnings(sc[[name]] <- fn(data = as.matrix(t(enrichment))))
     }
   } else if (.is_sce(sc)) {
-    altExp(sc, name) <- SummarizedExperiment::SummarizedExperiment(assays = list(data = t(enrichment)))
+    SingleCellExperiment::altExp(sc, name) <- SummarizedExperiment::SummarizedExperiment(assays = list(data = t(enrichment)))
   }
   sc
 }

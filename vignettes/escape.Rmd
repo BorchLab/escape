@@ -62,7 +62,7 @@ In addition, the function supports further subsetting through these parameters:
 
 If your data comes from a species other than Homo sapiens, be sure to use the species parameter (e.g., "Mus musculus") to ensure the correct gene nomenclature is applied.
 
-```{r eval = FALSE}
+```{r}
 GS.hallmark <- getGeneSets(library = "H")
 ```
 
@@ -89,7 +89,6 @@ gene.sets <- list(Bcells = c("MS4A1","CD79B","CD79A","IGH1","IGH2"),
 GS.hallmark <- msigdbr(species  = "Homo sapiens",  
                        category = "H")
 ```
-
 
 # Performing Enrichment Calculation
 

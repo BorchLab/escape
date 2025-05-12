@@ -1,22 +1,31 @@
-# create a cache environment.
-.msigdb_cache <- new.env(parent = emptyenv())
+.msigdb_cache_dir <- tools::R_user_dir("escape", "cache")
+dir.create(.msigdb_cache_dir, showWarnings = FALSE, recursive = TRUE)
 
+# Function to cache and retrieve MSigDB gene sets
 .msigdb_cached <- function(org, id = "SYM", version = "7.4") {
   key <- paste(org, id, version, sep = "_")
-  if (!exists(key, envir = .msigdb_cache, inherits = FALSE)) {
+  file_path <- file.path(.msigdb_cache_dir, paste0(key, ".rds"))
+  
+  if (file.exists(file_path)) {
+    gs <- readRDS(file_path)
+  } else {
     if (!requireNamespace("msigdb", quietly = TRUE))
       stop("Package 'msigdb' must be installed to download MSigDB resources")
+    
     gs <- suppressMessages(
       msigdb::getMsigdb(org = org, id = id, version = version)
     )
-    ## include KEGG sets (optional; silently ignore if API changes)
+    
+    # Optionally append KEGG pathways, but fail gracefully
     gs <- tryCatch(
       suppressWarnings(msigdb::appendKEGG(gs)),
       error = function(e) gs
     )
-    assign(key, gs, envir = .msigdb_cache)
+    
+    saveRDS(gs, file_path)
   }
-  get(key, envir = .msigdb_cache, inherits = FALSE)
+  
+  gs
 }
 
 #' Get a collection of gene sets from the msigdb
@@ -63,23 +72,32 @@ getGeneSets <- function(species      = c("Homo sapiens", "Mus musculus"),
   msig <- .msigdb_cached(org, id, version)
   
   ## helper to interrogate S4 slots without formal import ------------------------
-  .slot_chr <- function(obj, slot)
-    as.character(methods::slot(obj, slot, exact = TRUE))
+  .get_slot_nested <- function(x, outer_slot, inner_slot) {
+    outer <- methods::slot(x, outer_slot)
+    methods::slot(outer, inner_slot)
+  }
   
   ## apply successive filters in one pass ---------------------------------------
   keep <- rep(TRUE, length(msig))
   
-  if (!is.null(library))
-    keep <- keep & .slot_chr(msig, "collectionType") |> 
-    vapply(\(x) toupper(methods::slot(x, "category")), "", USE.NAMES = FALSE) %in% toupper(library)
-  
-  if (!is.null(subcategory))
+  if (!is.null(library)) {
     keep <- keep & vapply(msig,
-                          \(x) toupper(methods::slot(x@collectionType, "subCategory")),
-                          "", USE.NAMES = FALSE) %in% toupper(subcategory)
+                          \(x) toupper(.get_slot_nested(x, "collectionType", "category")),
+                          "", USE.NAMES = FALSE) %in% toupper(library)
+  }
   
-  if (!is.null(gene.sets))
+  if (!is.null(subcategory)) {
+    keep <- keep & vapply(msig,
+                          function(x) {
+                            ct <- methods::slot(x, "collectionType")
+                            toupper(methods::slot(ct, "subCategory"))
+                          },
+                          "", USE.NAMES = FALSE) %in% toupper(subcategory)
+  }
+  
+  if (!is.null(gene.sets)) {
     keep <- keep & vapply(msig, \(x) x@setName, "", USE.NAMES = FALSE) %in% gene.sets
+  }
   
   msig <- msig[keep]
   if (!length(msig)) {
@@ -88,10 +106,8 @@ getGeneSets <- function(species      = c("Homo sapiens", "Mus musculus"),
   }
   
   ## build simple list -----------------------------------------------------------
-  g.list <- split(
-    vapply(msig, `[`, i = "geneIds", FUN.VALUE = character(1L), USE.NAMES = FALSE),
-    vapply(msig, `[`, i = "setName", FUN.VALUE = character(1L), USE.NAMES = FALSE)
-  )
+  g.list <- lapply(msig, function(x) x@geneIds)
+  names(g.list) <- vapply(msig, function(x) x@setName, "", USE.NAMES = FALSE)
   names(g.list) <- gsub("_", "-", names(g.list), fixed = TRUE)
   
   ## optionally attach GeneSetCollection invisibly ------------------------------

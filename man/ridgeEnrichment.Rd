@@ -28,7 +28,7 @@ a single-cell object produced by [runEscape()].}
 \item{group.by}{Metadata column for the y-axis groups
 (default `"ident"` in Seurat / SCE).}
 
-\item{color.by}{Either `"group"` (use `group.by` colours) or the
+\item{color.by}{Either `"group"` (use `group.by` colors) or the
 name of a numeric column to map to a fill gradient.}
 
 \item{order.by}{`"mean"` | `"group"` | `NULL`.  Re-orders `group.by`

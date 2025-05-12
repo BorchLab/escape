@@ -191,9 +191,8 @@ runEscape <- function(input.data,
     esc <- escape.matrix(input.data, gene.sets, method, groups, min.size,
                          normalize, make.positive, min.expr.cells, 
                          min.filter.by, BPPARAM, ...)
-    .adding.Enrich(input.data, esc, new.assay.name)
     
-    input.data <- .adding.Enrich(input.data, enrichment, new.assay.name)
+    input.data <- .adding.Enrich(input.data, esc, new.assay.name)
     return(input.data)
 }
 
