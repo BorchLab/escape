@@ -1,4 +1,4 @@
-#' Normalize enrichment scores by expressed‑gene counts per cell
+#' Perform Normalization on Enrichment Data
 #' 
 #' @description
 #' Scales each enrichment value by the **number of genes from the set that are
@@ -6,7 +6,7 @@
 #' positive range and/or applies a natural‑log transform for compatibility with
 #' log‑based differential tests.
 #'
-#' @inheritParams escape_matrix
+#' @inheritParams escape.matrix
 #' @param sc.data      Single‑cell object used to generate *raw* enrichment, or a
 #'                     matrix of counts (cells × genes) when `enrichment.data`
 #'                     is supplied.
@@ -20,7 +20,7 @@
 #'                     zero.
 #' @param scale.factor Optional numeric vector overriding gene‑count scaling
 #'                     (length = #cells). Use when you want external per‑cell
-#'                     normalisation factors.
+#'                     normalization factors.
 #' @param groups       Chunk size (cells per block) when memory is limited.
 #'
 #' @example 
@@ -36,7 +36,7 @@
 #'                                    gene.sets = GS)
 #'
 #' @return If `sc.data` is an object, the same object with a new assay
-#'         "<assay>_normalized". Otherwise a matrix of normalised scores.
+#'         "<assay>_normalized". Otherwise a matrix of normalized scores.
 #' @export
 
 performNormalization <- function(sc.data,
@@ -49,7 +49,7 @@ performNormalization <- function(sc.data,
   ## ----------------------------------------------------------------------
   ## 1. Retrieve enrichment matrix ---------------------------------------
   assay.present <- FALSE
-  if (!is.null(assay) && .is_sc_object(sc.data)) {
+  if (!is.null(assay) && .is_seurat_or_sce(sc.data)) {
     if (.is_seurat(sc.data)) {
       assay.present <- assay %in% SeuratObject::Assays(sc.data)
     } else if (.is_sce(sc.data) || .is_se(sc.data)) {
@@ -109,7 +109,7 @@ performNormalization <- function(sc.data,
   
   ## ----------------------------------------------------------------------
   ## 6. Return ------------------------------------------------------------
-  if (.is_sc_object(sc.data)) {
+  if (.is_seurat_or_sce(sc.data)) {
     .adding.Enrich(sc.data, normalized, paste0(assay %||% "escape", "_normalized"))
   } else {
     normalized
