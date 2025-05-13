@@ -15,28 +15,23 @@
 #'    (weight = \|stat\|^*p*).  
 #' 5. ES = maximum signed deviation of the curve.  
 #'
-#' No permutation step is performed; therefore no *p*-value or normalised
-#' enrichment score (NES) is reported.
-#'
-#' @param input.data  A **Seurat** or **SummarizedExperiment** object
-#'   containing raw counts (taken from the `"RNA"` assay for Seurat).
-#' @param gene.set.use Character(1). Name of the gene-set to plot.
-#' @param gene.sets    Named list or `GeneSetCollection` mapping gene-set
-#'   names to character vectors of gene symbols.
-#' @param group.by     Metadata column used to define groups; defaults to
-#'   the Seurat `ident` slot.
+#' @param input.data  A \link[SeuratObject]{Seurat} object or a
+#' \link[SingleCellExperiment]{SingleCellExperiment}.
+#' @param gene.set.use Character(1).  Name of the gene set to display.
+#' @param gene.sets A named list of character vectors, the result of
+#' [getGeneSets()], or the built-in data object [escape.gene.sets].
+#' @param group.by Metadata column. Defaults to the Seurat/SCE `ident` 
+#' slot when `NULL`.
 #' @param summary.fun  Method used to collapse expression within each
-#*   group **before** ranking: one of  
-#'   `"mean"` (default), `"median"`, `"max"`, `"sum"`, `"geometric"`,  
-#'   or a custom function (e.g. `sd`).
-#' @param palette      Colour palette from \link[grDevices]{hcl.pals}
-#'   (default `"inferno"`).
-#' @param p            Weighting exponent in the KS statistic
-#'   (classical GSEA uses `p = 1`).
+#* group **before** ranking: one of `"mean"` (default), `"median"`, `"max"`,
+#*`"sum"`, or `"geometric"`
+#* @param p Weighting exponent in the KS statistic (classical GSEA uses `p = 1`).
 #' @param rug.height   Vertical spacing of the hit rug as a fraction of the
-#'   y-axis (default `0.02`).
+#' y-axis (default `0.02`).
 #' @param digits       Number of decimal places displayed for ES in the
-#'   legend (default `2`).
+#' legend (default `2`).
+#' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
+
 #'
 #' @return A single `patchwork`/`ggplot2` object that can be further
 #'   modified with `+` (e.g. `+ ggtitle()`).
@@ -59,10 +54,10 @@ gseaEnrichment <- function(input.data,
                            gene.sets,
                            group.by    = NULL,
                            summary.fun = "mean",
-                           palette     = "inferno",
                            p           = 1,
                            rug.height  = 0.02,
-                           digits      = 2) {
+                           digits      = 2,
+                           palette     = "inferno") {
   
   ## ---------- 0  Checks (unchanged) ----------------------------------------
   gene.sets <- .GS.check(gene.sets)

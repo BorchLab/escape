@@ -1,37 +1,37 @@
-#' Generate a geyser plot to examine enrichment distributions
+#' Visualize Enrichment Distributions Using Geyser Plots
 #' 
 #' This function allows to the user to examine the distribution of 
 #' enrichment across groups by generating a geyser plot.
 #'
-#' @param input.data A single‑cell object (\pkg{Seurat} /
-#'   \pkg{SummarizedExperiment}) **or** a data.frame/matrix containing
-#'   enrichment values (cells × gene‑sets).
+#' @param input.data Output of \code{\link{escape.matrix}} or a single‑cell
+#' object previously processed by \code{\link{runEscape}}.
 #' @param assay Name of the assay holding enrichment scores when
-#'   `input.data` is a single‑cell object. Ignored otherwise.
+#' `input.data` is a single‑cell object. Ignored otherwise.
 #' @param group.by Metadata column plotted on the *x*‑axis.  Defaults to the
-#'   Seurat/SCE `ident` slot when `NULL`.
+#' Seurat/SCE `ident` slot when `NULL`.
 #' @param gene.set Character(1). Gene‑set to plot (must exist in the
-#'   enrichment matrix).
-#' @param color.by Aesthetic mapped to point colour.  Use either
-#'   *"group"* (default = `group.by`) for categorical colouring or the
-#'   *name of a gene‑set* (e.g. same as `gene.set`) to obtain a numeric
-#'   gradient.  Any other metadata or column present in the data is also
-#'   accepted.
+#' enrichment matrix).
+#' @param color.by Aesthetic mapped to point color. Use either
+#' *"group"* (default = `group.by`) for categorical coloring or the
+#' *name of a gene‑set* (e.g. same as `gene.set`) to obtain a numeric
+#  gradient. Any other metadata or column present in the data is also
+#' accepted.
 #' @param order.by How to arrange the x‑axis:
 #'   *`"mean"`* – groups ordered by decreasing group mean;
 #'   *`"group"`* – natural sort of group labels;
 #'   *`NULL`* – keep original ordering.
 #' @param facet.by Optional metadata column used to facet the plot.
 #' @param scale Logical; if `TRUE` scores are centred/scaled (Z‑score) prior
-#'   to plotting.
+#' to plotting.
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'
 #' @return A \pkg{ggplot2} object.
 #' @export
 #'
 #' @examples
-#' gs <- list(Bcells = c("MS4A1","CD79B","CD79A"),
-#'            Tcells = c("CD3E","CD3D","CD3G","CD7","CD8A"))
+#' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+#'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+#'            
 #' pbmc <- SeuratObject::pbmc_small |>
 #'   runEscape(gene.sets = gs,
 #'             min.size = NULL)
@@ -80,7 +80,7 @@ geyserEnrichment <- function(input.data,
     # Raw points --------------------------------------------------------------
   geom_jitter(width = 0.25, size = 1.5, alpha = 0.6, na.rm = TRUE) +
     
-    # White base interval + median point -------------------------------------
+    # White base interval + median point -------------------------------------
   stat_pointinterval(interval_size_range = c(2, 3), fatten_point = 1.4,
                      interval_colour = "white", point_colour = "white",
                      position = position_dodge(width = 0.6), show.legend = FALSE) +

@@ -1,25 +1,28 @@
-#' Visualize the mean density ranking of genes across gene set
+#' Visualize Mean Density Ranking of Genes Across Gene Sets
 #' 
 #' This function allows to the user to examine the mean ranking
 #' within the groups across the gene set. The visualization uses
 #' the density function to display the relative position and distribution
 #' of rank.
 #'
-#' @param input.data  A *Seurat* or *SummarizedExperiment* object.
+#' @param input.data A \link[SeuratObject]{Seurat} object or a
+#' \link[SingleCellExperiment]{SingleCellExperiment}.
 #' @param gene.set.use Character(1).  Name of the gene set to display.
-#' @param gene.sets   Named list or `GeneSetCollection` supplying the sets.
-#' @param group.by    Metadata column used to define groups (default `"ident"`).
-#' @param palette     Colour palette from \link[grDevices]{hcl.colors}
-#'                   (default `"inferno"`).
+#' @param gene.sets A named list of character vectors, the result of
+#' [getGeneSets()], or the built-in data object [escape.gene.sets].
+#' @param group.by Metadata column. Defaults to the Seurat/SCE `ident` 
+#' slot when `NULL`.
+#' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'
 #' @examples
-#' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+#' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+#'            
 #' pbmc_small <- SeuratObject::pbmc_small
 #'                         
 #' densityEnrichment(pbmc_small, 
 #'                   gene.set.use = "Tcells",
-#'                   gene.sets = GS)
+#'                   gene.sets = gs)
 #'
 #' @return A `patchwork`/`ggplot2` object.
 #' @export

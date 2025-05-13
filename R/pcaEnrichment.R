@@ -1,4 +1,4 @@
-#' Visualize the PCA of enrichment values
+#' Visualize the PCA of Enrichment Values
 #' 
 #' This function allows to the user to examine the distribution
 #' of principal components run on the enrichment values.
@@ -6,15 +6,15 @@
 #' @param input.data Single‑cell object (Seurat / SCE) **or** the raw list
 #'   returned by [`performPCA()`].
 #' @param dimRed Name of the dimensional‑reduction slot to pull from a
-#'   single‑cell object.  Ignored when `input.data` is the list output.
+#'   single‑cell object. Ignored when `input.data` is the list output.
 #' @param x.axis,y.axis Character vectors naming the PCs to display (e.g. "PC1").
-#' @param facet.by Metadata column to facet by (single‑cell objects only).
+#' @param facet.by Metadata column to facet plot. 
 #' @param style "point" (default) or "hex".
-#' @param add.percent.contribution  Include % variance explained in axis labels.
+#' @param add.percent.contribution Include % variance explained in axis labels.
 #' @param display.factors Draw arrows for the top gene‑set loadings.
 #' @param number.of.factors Integer; how many loadings to display if
 #'   `display.factors = TRUE`.
-#' @param palette     Name passed to [grDevices::hcl.colors()].
+#' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #' 
 #' #' @examples 
 #' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),

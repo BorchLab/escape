@@ -6,39 +6,41 @@
 #' positive range and/or applies a natural‑log transform for compatibility with
 #' log‑based differential tests.
 #'
-#' @param sc.data      Single‑cell object used to generate *raw* enrichment, or a
-#'                     matrix of counts (cells × genes) when `enrichment.data`
-#'                     is supplied.
-#' @param enrichment.data Matrix with raw enrichment scores (cells × gene sets).
-#'                        Required when `sc.data` is a plain matrix.
-#' @param assay        Name of the assay to read/write inside `sc.data` when it
-#'                     is a Seurat / SCE object. Default is "escape".
-#' @param gene.sets    The gene‑set definitions originally used. Needed to count
-#'                     expressed genes per set.
+#' @param input.data  raw‐counts matrix (`genes × cells`), a 
+#' \link[SeuratObject]{Seurat} object, or a 
+#' \link[SingleCellExperiment]{SingleCellExperiment}. Gene identifiers must
+#' match those in `gene.sets`.
+#' @param enrichment.data Output of \code{\link{escape.matrix}} or a single‑cell
+#' object previously processed by \code{\link{runEscape}}.
+#' @param assay Name of the assay holding enrichment scores when
+#' `input.data` is a single‑cell object. Ignored otherwise.
+#' @param gene.sets A named list of character vectors, the result of
+#' [getGeneSets()], or the built-in data object
+#' [escape.gene.sets].  List names become column names in the result.
 #' @param make.positive Logical; if `TRUE` shifts each column so its minimum is
-#'                     zero.
+#' zero.
 #' @param scale.factor Optional numeric vector overriding gene‑count scaling
-#'                     (length = #cells). Use when you want external per‑cell
-#'                     normalization factors.
-#' @param groups       Chunk size (cells per block) when memory is limited.
+#' (length = #cells). Use when you want external per‑cell normalization factors.
+#' @param groups Integer ≥ 1.  Number of cells per processing chunk.
+#' Larger values reduce overhead but increase memory usage.  Default **1000**.
 #'
 #' @examples 
 #' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
-#' pbmc_small <- SeuratObject::pbmc_small
-#' pbmc_small <- runEscape(pbmc_small, 
-#'                         gene.sets = GS, 
-#'                         min.size = NULL)
+#' 
+#' pbmc <- SeuratObject::pbmc_small |>
+#'   runEscape(gene.sets = gs,
+#'             min.size = NULL)
 #'                         
-#' pbmc_small <- performNormalization(pbmc_small, 
-#'                                    assay = "escape", 
-#'                                    gene.sets = GS)
+#' pbmc <- performNormalization(pbmc, 
+#'                              assay = "escape", 
+#'                              gene.sets = GS)
 #'
-#' @return If `sc.data` is an object, the same object with a new assay
+#' @return If `input.data` is an object, the same object with a new assay
 #'         "<assay>_normalized". Otherwise a matrix of normalized scores.
 #' @export
 
-performNormalization <- function(sc.data,
+performNormalization <- function(input.data,
                                  enrichment.data = NULL,
                                  assay           = "escape",
                                  gene.sets       = NULL,
@@ -48,15 +50,15 @@ performNormalization <- function(sc.data,
   ## ----------------------------------------------------------------------
   ## 1. Retrieve enrichment matrix ---------------------------------------
   assay.present <- FALSE
-  if (!is.null(assay) && .is_seurat_or_sce(sc.data)) {
-    if (.is_seurat(sc.data)) {
-      assay.present <- assay %in% SeuratObject::Assays(sc.data)
-    } else if (.is_sce(sc.data) || .is_se(sc.data)) {
-      assay.present <- assay %in% names(SummarizedExperiment::altExps(sc.data))
+  if (!is.null(assay) && .is_seurat_or_sce(input.data)) {
+    if (.is_seurat(input.data)) {
+      assay.present <- assay %in% SeuratObject::Assays(input.data)
+    } else if (.is_sce(input.data) || .is_se(input.data)) {
+      assay.present <- assay %in% names(SummarizedExperiment::altExps(input.data))
     }
   }
   
-  enriched <- if (assay.present) .pull.Enrich(sc.data, assay) else enrichment.data
+  enriched <- if (assay.present) .pull.Enrich(input.data, assay) else enrichment.data
   if (is.null(enriched)) stop("Could not obtain enrichment matrix – please set 'assay' or supply 'enrichment.data'.")
   
   ## ----------------------------------------------------------------------
@@ -71,7 +73,7 @@ performNormalization <- function(sc.data,
     if (!length(egc)) stop("None of the supplied gene sets match enrichment columns.")
     
     ## counts matrix (genes × cells) – drop after use to save RAM
-    cnts <- .cntEval(sc.data, assay = "RNA", type = "counts")
+    cnts <- .cntEval(input.data, assay = "RNA", type = "counts")
     message("Computing expressed‑gene counts per cell …")
     scale.mat <- do.call(cbind, lapply(egc, function(gs) {
       vec <- Matrix::colSums(cnts[rownames(cnts) %in% gs, , drop = FALSE] != 0)
@@ -108,8 +110,8 @@ performNormalization <- function(sc.data,
   
   ## ----------------------------------------------------------------------
   ## 6. Return ------------------------------------------------------------
-  if (.is_seurat_or_sce(sc.data)) {
-    .adding.Enrich(sc.data, normalized, paste0(assay %||% "escape", "_normalized"))
+  if (.is_seurat_or_sce(input.data)) {
+    .adding.Enrich(input.data, normalized, paste0(assay %||% "escape", "_normalized"))
   } else {
     normalized
   }

@@ -1,30 +1,30 @@
-#' Density-aware scatter plot of two gene-set scores
+#' Plot 2D Enrichment Distributions With Density or Hexplots
 #'
 #' Visualize the relationship between *two* enrichment scores at single-cell
-#' resolution.  By default points are shaded by local 2-D density
+#' resolution. By default points are shaded by local 2-D density
 #' (`color.by = "density"`), but users can instead color by a metadata column
 #' (discrete) or by the raw gene-set scores themselves (continuous).
 #'
-#' @param input.data  Output of \code{\link{escape.matrix}} or an object
-#'   previously processed with \code{\link{runEscape}}.
-#' @param assay       Name of the assay storing enrichment scores when
-#'   `input.data` is a single-cell object.  Ignored for plain matrices.
-#' @param x.axis,y.axis  Gene-set names to plot on the *x* and *y* axes.
-#' @param facet.by    Optional metadata column used to create separate panels
-#'   (`facet_grid(. ~ facet.by)`).
-#' @param group.by    Metadata column used for discrete coloring
-#'   (`color.by = "group"`).  Defaults to `"ident"`.
-#' @param color.by    One of `"density"` (default), `"group"`, `"x"`, or `"y"`.
-#'   The latter two apply a continuous gradient to the corresponding axis.
-#' @param style       `"point"` (density-aware points) or `"hex"` (hex-bin).
-#' @param scale       Logical.  Z-transform each gene-set column before
-#'   plotting.
-#' @param bins        Number of hex bins along each axis when `style = "hex"`.
+#' @param input.data Output of \code{\link{escape.matrix}} or a single‑cell
+#' object previously processed by \code{\link{runEscape}}.
+#' @param assay Name of the assay holding enrichment scores when
+#' `input.data` is a single‑cell object. Ignored otherwise.
+#' @param x.axis,y.axis Gene-set names to plot on the *x* and *y* axes.
+#' @param facet.by Optional metadata column used to facet the plot.
+#' @param group.by Metadata column plotted.  Defaults to the
+#' Seurat/SCE `ident` slot when `NULL`.
+#' @param color.by Aesthetic mapped to point color. Use 
+#' `"density"` (default), `"group"`, `"x"`, or `"y"`.  The latter two apply a 
+#' continuous gradient to the corresponding axis.
+#' @param style `"point"` (density-aware points) or `"hex"` (hex-bin).
+#' @param scale Logical; if `TRUE` scores are centered/scaled (Z‑score) prior
+#' to plotting.
+#' @param bins Number of hex bins along each axis when `style = "hex"`.
 #' @param point.size,alpha  Aesthetic tweaks for `style = "point"`.
-#' @param palette     Any palette from \link[grDevices]{hcl.pals} (default
-#'   `"inferno"`).
-#' @param add.corr    Logical.  Add Pearson and Spearman correlation
-#'   coefficients (top-left corner of the first facet).
+#' @param add.corr Logical. Add Pearson and Spearman correlation
+#' coefficients (top-left corner of the first facet).
+#' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
+
 #'
 #' @return A \pkg{ggplot2} object.
 #' @export

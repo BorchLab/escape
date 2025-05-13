@@ -1,39 +1,46 @@
-#' Visualize enrichment results with a ridge plot
+#' Visualize Enrichment Distributions Using Ridge Plots
 #' 
 #' This function allows to the user to examine the distribution of 
 #' enrichment across groups by generating a ridge plot.
 #'
-#' @param input.data  Enrichment output from [escape.matrix()] or
-#'   a single-cell object produced by [runEscape()].
-#' @param gene.set    Gene-set (column) to plot **(length 1)**.
-#' @param assay       Assay name if `input.data` is a single-cell object.
-#' @param group.by    Metadata column for the y-axis groups
-#'   (default `"ident"` in Seurat / SCE).
-#' @param color.by    Either `"group"` (use `group.by` colors) or the
-#'   name of a numeric column to map to a fill gradient.
-#' @param order.by    `"mean"` | `"group"` | `NULL`.  Re-orders `group.by`
-#'   factor by mean score or alphanumerically.
-#' @param scale       Logical.  Z-transform the selected `gene.set`.
-#' @param facet.by    Optional column to facet (`. ~ facet.by`).
-#' @param add.rug     Draw per-cell tick marks underneath each ridge.
-#' @param palette     Palette passed to [grDevices::hcl.colors()].
+#' @param input.data Output of \code{\link{escape.matrix}} or a single‑cell
+#' object previously processed by \code{\link{runEscape}}.
+#' @param gene.set.use Character(1).  Name of the gene set to display.
+#' @param assay Name of the assay holding enrichment scores when
+#' `input.data` is a single‑cell object. Ignored otherwise.
+#' @param group.by Metadata column plotted on the *y*‑axis.  Defaults to the
+#' Seurat/SCE `ident` slot when `NULL`.
+#'@param color.by Aesthetic mapped to point color. Use either
+#' *"group"* (default = `group.by`) for categorical coloring or the
+#' *name of a gene‑set* (e.g. same as `gene.set`) to obtain a numeric
+#  gradient. Any other metadata or column present in the data is also
+#' accepted.
+#' @param order.by How to arrange the x‑axis:
+#'   *`"mean"`* – groups ordered by decreasing group mean;
+#'   *`"group"`* – natural sort of group labels;
+#'   *`NULL`* – keep original ordering.
+#' @param facet.by Optional metadata column used to facet the plot.
+#' @param scale Logical; if `TRUE` scores are centred/scaled (Z‑score) prior
+#' to plotting.
+#' @param add.rug Logical. Draw per-cell tick marks underneath each ridge.
+#' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'
 #' @return A [ggplot2] object.
 #' @export
 #'
 #' @examples
-#' gs <- list(
-#'   B = c("MS4A1","CD79A","CD79B"),
-#'   T = c("CD3D","CD3E","CD3G","CD7")
-#' )
+#' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+#'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+#'            
 #' pbmc <- SeuratObject::pbmc_small |>
 #'   runEscape(gene.sets = gs, min.size = NULL)
 #'
 #' ridgeEnrichment(pbmc, assay = "escape",
-#'                 gene.set = "T",
+#'                 gene.set.use = "Tcells",
 #'                 group.by = "groups")
+#'                 
 ridgeEnrichment <- function(input.data,
-                            gene.set,
+                            gene.set.use,
                             assay      = NULL,
                             group.by   = NULL,
                             color.by   = "group",
@@ -46,18 +53,18 @@ ridgeEnrichment <- function(input.data,
   ## ---- 0  sanity -------------------------------------------------------
   if (!requireNamespace("ggridges", quietly = TRUE))
     stop("Package 'ggridges' is required for ridge plots; please install it.")
-  if (length(gene.set) != 1L)
-    stop("'gene.set' must be length 1.")
+  if (length(gene.set.use) != 1L)
+    stop("'gene.set.use' must be length 1.")
   if (is.null(group.by)) group.by <- "ident"
   if (identical(color.by, "group")) color.by <- group.by
   
   ## ---- 1  build long data.frame ---------------------------------------
-  df <- .prepData(input.data, assay, gene.set, group.by,
+  df <- .prepData(input.data, assay, gene.set.use, group.by,
                   split.by = NULL, facet.by = facet.by)
   
   ## optional scaling (Z-transform per gene-set) -------------------------
   if (scale)
-    df[[gene.set]] <- as.numeric(scale(df[[gene.set]], center = TRUE))
+    df[[gene.set.use]] <- as.numeric(scale(df[[gene.set.use]], center = TRUE))
   
   ## optional re-ordering of the y-axis factor ---------------------------
   if (!is.null(order.by))
@@ -65,7 +72,7 @@ ridgeEnrichment <- function(input.data,
   
   ## detect “gradient” mode (numeric color mapped to x) -----------------
   gradient.mode <-
-    is.numeric(df[[color.by]]) && identical(color.by, gene.set)
+    is.numeric(df[[color.by]]) && identical(color.by, gene.set.use)
   
   if(gradient.mode) {
     fill <- ggplot2::after_stat(x)
@@ -75,7 +82,7 @@ ridgeEnrichment <- function(input.data,
   
   ## ---- 2  base ggplot --------------------------------------------------
   aes_base <- ggplot2::aes(
-    x    = df[,gene.set],
+    x    = df[,gene.set.use],
     y    = df[,group.by],
     fill = fill
   )
@@ -104,7 +111,7 @@ ridgeEnrichment <- function(input.data,
   ## ---- 3  scales & labels ---------------------------------------------
   p <- p +
     ylab(group.by) +
-    xlab(paste0(gene.set, "\nEnrichment Score")) +
+    xlab(paste0(gene.set.use, "\nEnrichment Score")) +
     ggplot2::theme_classic(base_size = 11)
   
   p <- .colorby(df, p, color.by, palette, type = "fill")

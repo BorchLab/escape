@@ -1,33 +1,3 @@
-.msigdb_cache_dir <- tools::R_user_dir("escape", "cache")
-dir.create(.msigdb_cache_dir, showWarnings = FALSE, recursive = TRUE)
-
-# Function to cache and retrieve MSigDB gene sets
-.msigdb_cached <- function(org, id = "SYM", version = "7.4") {
-  key <- paste(org, id, version, sep = "_")
-  file_path <- file.path(.msigdb_cache_dir, paste0(key, ".rds"))
-  
-  if (file.exists(file_path)) {
-    gs <- readRDS(file_path)
-  } else {
-    if (!requireNamespace("msigdb", quietly = TRUE))
-      stop("Package 'msigdb' must be installed to download MSigDB resources")
-    
-    gs <- suppressMessages(
-      msigdb::getMsigdb(org = org, id = id, version = version)
-    )
-    
-    # Optionally append KEGG pathways, but fail gracefully
-    gs <- tryCatch(
-      suppressWarnings(msigdb::appendKEGG(gs)),
-      error = function(e) gs
-    )
-    
-    saveRDS(gs, file_path)
-  }
-  
-  gs
-}
-
 #' Get a collection of gene sets from the msigdb
 #'
 #' This function retrieves gene sets from msigdb and caches the downloaded object 
@@ -35,12 +5,14 @@ dir.create(.msigdb_cache_dir, showWarnings = FALSE, recursive = TRUE)
 #' subcollection, or specific gene sets, and only supports human 
 #' ("Homo sapiens") and mouse ("Mus musculus").
 #'
-#' @param species   `"Homo sapiens"` (default) or `"Mus musculus"`.
-#' @param library   Optional vector of main collection codes (e.g. `"H"`, `"C5"`).
-#' @param subcategory Optional vector of sub-collection codes (e.g. `"GO:BP"`).
-#' @param gene.sets Optional vector of specific gene-set names.
-#' @param version   MSigDB version (character, default `"7.4"`).
-#' @param id        Identifier type (default `"SYM"` for symbols).
+#' @param species `"Homo sapiens"` (default) or `"Mus musculus"`.
+#' @param library Character. Optional vector of main collection codes 
+#' (e.g. `"H"`, `"C5"`).
+#' @param subcategory Character. Optional vector of sub-collection codes 
+#' (e.g. `"GO:BP"`).
+#' @param gene.sets Character. Optional vector of specific gene-set names.
+#' @param version MSigDB version (character, default `"7.4"`).
+#' @param id Identifier type (default `"SYM"` for symbols).
 #'
 #' @examples
 #' \dontrun{
@@ -54,9 +26,7 @@ dir.create(.msigdb_cache_dir, showWarnings = FALSE, recursive = TRUE)
 #'                   subcategory = "GO:BP")
 #' }
 #'
-#' @return A named `list` of character vectors (gene IDs).  
-#'         If **GSEABase** is installed, the function also returns (invisibly)
-#'         a `GeneSetCollection` with the same content.
+#' @return A named `list` of character vectors (gene IDs).
 #' @export
 getGeneSets <- function(species      = c("Homo sapiens", "Mus musculus"),
                         library      = NULL,
@@ -119,4 +89,35 @@ getGeneSets <- function(species      = c("Homo sapiens", "Mus musculus"),
   }
   
   g.list
+}
+
+# Setting up cache system
+.msigdb_cache_dir <- tools::R_user_dir("escape", "cache")
+dir.create(.msigdb_cache_dir, showWarnings = FALSE, recursive = TRUE)
+
+# Function to cache and retrieve MSigDB gene sets
+.msigdb_cached <- function(org, id = "SYM", version = "7.4") {
+  key <- paste(org, id, version, sep = "_")
+  file_path <- file.path(.msigdb_cache_dir, paste0(key, ".rds"))
+  
+  if (file.exists(file_path)) {
+    gs <- readRDS(file_path)
+  } else {
+    if (!requireNamespace("msigdb", quietly = TRUE))
+      stop("Package 'msigdb' must be installed to download MSigDB resources")
+    
+    gs <- suppressMessages(
+      msigdb::getMsigdb(org = org, id = id, version = version)
+    )
+    
+    # Optionally append KEGG pathways, but fail gracefully
+    gs <- tryCatch(
+      suppressWarnings(msigdb::appendKEGG(gs)),
+      error = function(e) gs
+    )
+    
+    saveRDS(gs, file_path)
+  }
+  
+  gs
 }

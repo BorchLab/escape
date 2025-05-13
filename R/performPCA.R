@@ -8,27 +8,27 @@
 #' workflow in lieu of using \code{\link{performPCA}}, but will not be 
 #' compatible with downstream \code{\link{pcaEnrichment}} visualization.
 #'
-#' @param input.data    Numeric matrix (cells × gene sets) **or** a single-cell
-#'   object containing an “escape” assay.
-#' @param assay         Name of the assay to pull from a single-cell object
-#'   (default `"escape"`).
-#' @param scale         Logical; if `TRUE` standardises each gene-set column
-#'   before PCA.
-#' @param n.dim         Integer ≥1 or vector; the **largest** value sets the
+#' @param input.data Output of \code{\link{escape.matrix}} or a single‑cell
+#' object previously processed by \code{\link{runEscape}}.
+#' @param assay Name of the assay holding enrichment scores when
+#' `input.data` is a single‑cell object. Ignored otherwise.
+#' @param scale Logical; if `TRUE` standardises each gene-set column
+#' before PCA.
+#' @param n.dim Integer ≥1 or vector; the **largest** value sets the
 #'   number of principal components to compute / keep.
-#' @param reduction.name, reduction.key  Names used when writing back to a
+#' @param reduction.name,reduction.key  Names used when writing back to a
 #'   Seurat / SCE object.
 #'   
 #' @examples
-#' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+#' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
-#' pbmc_small <- SeuratObject::pbmc_small
-#' pbmc_small <- runEscape(pbmc_small, 
-#'                         gene.sets = GS, 
-#'                         min.size = NULL)
+#' 
+#' pbmc <- SeuratObject::pbmc_small |>
+#'   runEscape(gene.sets = gs,
+#'             min.size = NULL)           
 #'                         
-#' pbmc_small <- performPCA(pbmc_small, 
-#'                          assay = "escape")
+#' pbmc <- performPCA(pbmc, 
+#'                    assay = "escape")
 #'
 #' @return *If* `input.data` is a single-cell object, the same object with a
 #'   new dimensional-reduction slot.  *Otherwise* a list with  
