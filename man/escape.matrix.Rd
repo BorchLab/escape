@@ -2,7 +2,7 @@
 % Please edit documentation in R/runEscape.R
 \name{escape.matrix}
 \alias{escape.matrix}
-\title{Calculate single-cell gene-set enrichment scores}
+\title{Calculate Single-Cell Gene-Set Enrichment Scores}
 \usage{
 escape.matrix(
   input.data,
@@ -21,41 +21,40 @@ escape.matrix(
 \arguments{
 \item{input.data}{A raw‐counts matrix (`genes × cells`), a
 \link[SeuratObject]{Seurat} object, or a
-\link[SingleCellExperiment]{SingleCellExperiment}.  Gene identifiers must
+\link[SingleCellExperiment]{SingleCellExperiment}. Gene identifiers must
 match those in `gene.sets`.}
 
 \item{gene.sets}{A named list of character vectors, the result of
-[getGeneSets()], or the built-in data object
-[escape.gene.sets].  List names become column names in the result.}
+[getGeneSets()], or the built-in data object [escape.gene.sets]. 
+List names become column names in the result.}
 
-\item{method}{Scoring algorithm (case-insensitive).  One of
-`"GSVA"`, `"ssGSEA"`, `"UCell"`, or `"AUCell"`.
-Default **`"ssGSEA"`**.}
+\item{method}{Scoring algorithm (case-insensitive). One of `"GSVA"`, 
+`"ssGSEA"`, `"UCell"`, or `"AUCell"`. Default **`"ssGSEA"`**.}
 
-\item{groups}{Integer ≥ 1.  Number of cells per processing chunk.
+\item{groups}{Integer ≥ 1. Number of cells per processing chunk.
 Larger values reduce overhead but increase memory usage.  Default **1000**.}
 
 \item{min.size}{Minimum number of genes from a set that must be detected
 in the expression matrix for that set to be scored.  Default **5**.
 Use `NULL` to disable filtering.}
 
-\item{normalize}{Logical.  If `TRUE`, the score matrix is passed to
-[performNormalization()] (drop-out scaling and optional log
-transform).  Default **FALSE**.}
+\item{normalize}{Logical. If `TRUE`, the score matrix is passed to
+[performNormalization()] (drop-out scaling and optional log transform).
+Default **FALSE**.}
 
-\item{make.positive}{Logical.  If `TRUE` *and* `normalize = TRUE`, shifts
+\item{make.positive}{Logical. If `TRUE` *and* `normalize = TRUE`, shifts
 every gene-set column so its global minimum is zero, facilitating
 downstream log-ratio analyses.  Default **FALSE**.}
 
-\item{min.expr.cells}{Numeric.  Gene-expression filter threshold (see
-details above).  Default **0** (no gene filtering).}
+\item{min.expr.cells}{Numeric. Gene-expression filter threshold (see
+details above). Default **0** (no gene filtering).}
 
 \item{min.filter.by}{Character or `NULL`.  Column name in `meta.data`
 (Seurat) or `colData` (SCE) defining groups within which the
 `min.expr.cells` rule is applied.  Default **`NULL`**.}
 
 \item{BPPARAM}{A \pkg{BiocParallel} parameter object describing the
-parallel backend.  Default is `BiocParallel::SerialParam()` (serial
+parallel backend. Default is `BiocParallel::SerialParam()` (serial
 execution).}
 
 \item{...}{Extra arguments passed verbatim to the chosen back-end
@@ -64,7 +63,7 @@ scoring function (`gsva()`, `ScoreSignatures_UCell()`, or
 }
 \value{
 A numeric matrix with one row per cell and one column per gene set,
-  ordered as in `gene.sets`.
+ordered as in `gene.sets`.
 }
 \description{
 `escape.matrix()` computes per-cell enrichment for arbitrary gene-set
@@ -86,17 +85,21 @@ lazily, keeping them in the package’s \strong{Suggests} field.
 }
 
 \examples{
-gs <- list(B = c("MS4A1","CD79B","CD79A"),
-           T = c("CD3E","CD3D","CD3G"))
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+           Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+
 pbmc <- SeuratObject::pbmc_small
-es   <- escape.matrix(pbmc, gene.sets = gs,
-                      method = "ssGSEA", groups = 500, min.size = 3)
+es   <- escape.matrix(pbmc, 
+                      gene.sets = gs,
+                      method = "ssGSEA", 
+                      groups = 500, 
+                      min.size = 3)
 
 }
 \seealso{
 [runEscape()] to attach scores to a single-cell object;
-  [getGeneSets()] for MSigDB retrieval; [performNormalization()] for the
-  optional normalisation workflow.
+[getGeneSets()] for MSigDB retrieval; [performNormalization()] for the
+optional normalization workflow.
 }
 \author{
 Nick Borcherding, Jared Andrews

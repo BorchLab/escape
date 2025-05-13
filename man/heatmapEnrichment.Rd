@@ -2,7 +2,7 @@
 % Please edit documentation in R/heatmapEnrichment.R
 \name{heatmapEnrichment}
 \alias{heatmapEnrichment}
-\title{Generate a heatmap to visualize enrichment values}
+\title{Visualize Enrichment Value Summaries Using Heatmaps}
 \usage{
 heatmapEnrichment(
   input.data,
@@ -21,11 +21,11 @@ heatmapEnrichment(
 \item{input.data}{Output of \code{\link{escape.matrix}} or a single‑cell
 object previously processed by \code{\link{runEscape}}.}
 
-\item{assay}{Name of the assay containing enrichment data when
-`input.data` is a single‑cell object.}
+\item{assay}{Name of the assay holding enrichment scores when
+`input.data` is a single‑cell object. Ignored otherwise.}
 
-\item{group.by}{Metadata column used to define columns in the heatmap.
-Defaults to the Seurat/SCE `ident` slot.}
+\item{group.by}{Metadata column plotted on the *x*‑axis.  Defaults to the
+Seurat/SCE `ident` slot when `NULL`.}
 
 \item{gene.set.use}{Vector of gene‑set names to plot, or \code{"all"}
 (default) to show every available gene set.}
@@ -33,18 +33,14 @@ Defaults to the Seurat/SCE `ident` slot.}
 \item{cluster.rows, cluster.columns}{Logical; if \code{TRUE}, rows/columns
 are ordered by Ward‑linkage hierarchical clustering (Euclidean distance).}
 
-\item{facet.by}{Optional metadata column to facet the heatmap.}
+\item{facet.by}{Optional metadata column used to facet the plot.}
 
-\item{scale}{If \code{TRUE}, Z‑transforms each gene‑set column _after_
-summarisation.}
+\item{scale}{If \code{TRUE}, Z‑transforms each gene‑set column **after**
+summarization.}
 
-\item{summary.stat}{Character keyword (\code{"mean"}, \code{"median"},
-\code{"sum"}, \code{"sd"}, \code{"max"}, \code{"min"},
-\code{"geometric"}) **or** a custom function to collapse scores within
-each group.  Defaults to \code{"mean"}.}
+\item{summary.stat}{Method used to summarize expression within each}
 
-\item{palette}{Any palette from \link[grDevices]{hcl.pals}; default
-\code{"inferno"}.}
+\item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }
 \value{
 A \code{ggplot2} object.
@@ -55,9 +51,12 @@ enrichment values by group. The heatmap will have the gene sets as rows
 and columns will be the grouping variable.
 }
 \examples{
-gs <- list(B  = c("MS4A1","CD79B","CD79A"),
-           T  = c("CD3D","CD3E","CD3G"))
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+           Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+           
 pbmc <- SeuratObject::pbmc_small |>
   runEscape(gene.sets = gs, min.size = NULL)
+  
 heatmapEnrichment(pbmc, assay = "escape", palette = "viridis")
+
 }

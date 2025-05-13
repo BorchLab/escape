@@ -2,7 +2,7 @@
 % Please edit documentation in R/scatterEnrichment.R
 \name{scatterEnrichment}
 \alias{scatterEnrichment}
-\title{Density-aware scatter plot of two gene-set scores}
+\title{Plot 2D Enrichment Distributions With Density or Hexplots}
 \usage{
 scatterEnrichment(
   input.data,
@@ -22,36 +22,35 @@ scatterEnrichment(
 )
 }
 \arguments{
-\item{input.data}{Output of \code{\link{escape.matrix}} or an object
-previously processed with \code{\link{runEscape}}.}
+\item{input.data}{Output of \code{\link{escape.matrix}} or a single‑cell
+object previously processed by \code{\link{runEscape}}.}
 
-\item{assay}{Name of the assay storing enrichment scores when
-`input.data` is a single-cell object.  Ignored for plain matrices.}
+\item{assay}{Name of the assay holding enrichment scores when
+`input.data` is a single‑cell object. Ignored otherwise.}
 
 \item{x.axis, y.axis}{Gene-set names to plot on the *x* and *y* axes.}
 
-\item{facet.by}{Optional metadata column used to create separate panels
-(`facet_grid(. ~ facet.by)`).}
+\item{facet.by}{Optional metadata column used to facet the plot.}
 
-\item{group.by}{Metadata column used for discrete coloring
-(`color.by = "group"`).  Defaults to `"ident"`.}
+\item{group.by}{Metadata column plotted.  Defaults to the
+Seurat/SCE `ident` slot when `NULL`.}
 
-\item{color.by}{One of `"density"` (default), `"group"`, `"x"`, or `"y"`.
-The latter two apply a continuous gradient to the corresponding axis.}
+\item{color.by}{Aesthetic mapped to point color. Use 
+`"density"` (default), `"group"`, `"x"`, or `"y"`.  The latter two apply a 
+continuous gradient to the corresponding axis.}
 
 \item{style}{`"point"` (density-aware points) or `"hex"` (hex-bin).}
 
-\item{scale}{Logical.  Z-transform each gene-set column before
-plotting.}
+\item{scale}{Logical; if `TRUE` scores are centered/scaled (Z‑score) prior
+to plotting.}
 
 \item{bins}{Number of hex bins along each axis when `style = "hex"`.}
 
 \item{point.size, alpha}{Aesthetic tweaks for `style = "point"`.}
 
-\item{palette}{Any palette from \link[grDevices]{hcl.pals} (default
-`"inferno"`).}
+\item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 
-\item{add.corr}{Logical.  Add Pearson and Spearman correlation
+\item{add.corr}{Logical. Add Pearson and Spearman correlation
 coefficients (top-left corner of the first facet).}
 }
 \value{
@@ -59,7 +58,7 @@ A \pkg{ggplot2} object.
 }
 \description{
 Visualize the relationship between *two* enrichment scores at single-cell
-resolution.  By default points are shaded by local 2-D density
+resolution. By default points are shaded by local 2-D density
 (`color.by = "density"`), but users can instead color by a metadata column
 (discrete) or by the raw gene-set scores themselves (continuous).
 }

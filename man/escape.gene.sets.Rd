@@ -14,7 +14,7 @@ data("escape.gene.sets")
 \description{
 `escape.gene.sets` ships with **escape** and provides a convenient set of
 cell-type and pathway signatures from the scRNA-seq tumour micro-environment
-study by Azizi *et al.* (2018, Cell \doi{10.1016/j.cell.2018.06.021}).  These
+study by Azizi *et al.* (2018, Cell \doi{10.1016/j.cell.2018.06.021}). These
 signatures capture major immune and stromal populations observed across
 breast-cancer samples and serve as a lightweight default for quick testing or
 exploratory analyses.

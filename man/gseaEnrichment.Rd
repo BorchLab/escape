@@ -10,39 +10,33 @@ gseaEnrichment(
   gene.sets,
   group.by = NULL,
   summary.fun = "mean",
-  palette = "inferno",
   p = 1,
   rug.height = 0.02,
-  digits = 2
+  digits = 2,
+  palette = "inferno"
 )
 }
 \arguments{
-\item{input.data}{A **Seurat** or **SummarizedExperiment** object
-containing raw counts (taken from the `"RNA"` assay for Seurat).}
+\item{input.data}{A \link[SeuratObject]{Seurat} object or a
+\link[SingleCellExperiment]{SingleCellExperiment}.}
 
-\item{gene.set.use}{Character(1). Name of the gene-set to plot.}
+\item{gene.set.use}{Character(1).  Name of the gene set to display.}
 
-\item{gene.sets}{Named list or `GeneSetCollection` mapping gene-set
-names to character vectors of gene symbols.}
+\item{gene.sets}{A named list of character vectors, the result of
+[getGeneSets()], or the built-in data object [escape.gene.sets].}
 
-\item{group.by}{Metadata column used to define groups; defaults to
-the Seurat `ident` slot.}
+\item{group.by}{Metadata column. Defaults to the Seurat/SCE `ident` 
+slot when `NULL`.}
 
-\item{summary.fun}{Method used to collapse expression within each
-`"mean"` (default), `"median"`, `"max"`, `"sum"`, `"geometric"`,  
-or a custom function (e.g. `sd`).}
-
-\item{palette}{Colour palette from \link[grDevices]{hcl.pals}
-(default `"inferno"`).}
-
-\item{p}{Weighting exponent in the KS statistic
-(classical GSEA uses `p = 1`).}
+\item{summary.fun}{Method used to collapse expression within each}
 
 \item{rug.height}{Vertical spacing of the hit rug as a fraction of the
 y-axis (default `0.02`).}
 
 \item{digits}{Number of decimal places displayed for ES in the
 legend (default `2`).}
+
+\item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }
 \value{
 A single `patchwork`/`ggplot2` object that can be further
@@ -63,10 +57,7 @@ label, e.g. `Cluster-A (ES = 1.42)`.
 3. Rank genes (descending) to obtain one ordered list per group.  
 4. Compute the weighted Kolmogorov–Smirnov running score  
    (weight = \|stat\|^*p*).  
-5. ES = maximum signed deviation of the curve.  
-
-No permutation step is performed; therefore no *p*-value or normalised
-enrichment score (NES) is reported.
+5. ES = maximum signed deviation of the curve.
 }
 \examples{
 data(pbmc_small)

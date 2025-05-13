@@ -2,7 +2,7 @@
 % Please edit documentation in R/geyserEnrichment.R
 \name{geyserEnrichment}
 \alias{geyserEnrichment}
-\title{Generate a geyser plot to examine enrichment distributions}
+\title{Visualize Enrichment Distributions Using Geyser Plots}
 \usage{
 geyserEnrichment(
   input.data,
@@ -17,9 +17,8 @@ geyserEnrichment(
 )
 }
 \arguments{
-\item{input.data}{A single‑cell object (\pkg{Seurat} /
-\pkg{SummarizedExperiment}) **or** a data.frame/matrix containing
-enrichment values (cells × gene‑sets).}
+\item{input.data}{Output of \code{\link{escape.matrix}} or a single‑cell
+object previously processed by \code{\link{runEscape}}.}
 
 \item{assay}{Name of the assay holding enrichment scores when
 `input.data` is a single‑cell object. Ignored otherwise.}
@@ -30,16 +29,15 @@ Seurat/SCE `ident` slot when `NULL`.}
 \item{gene.set}{Character(1). Gene‑set to plot (must exist in the
 enrichment matrix).}
 
-\item{color.by}{Aesthetic mapped to point colour.  Use either
-*"group"* (default = `group.by`) for categorical colouring or the
+\item{color.by}{Aesthetic mapped to point color. Use either
+*"group"* (default = `group.by`) for categorical coloring or the
 *name of a gene‑set* (e.g. same as `gene.set`) to obtain a numeric
-gradient.  Any other metadata or column present in the data is also
 accepted.}
 
 \item{order.by}{How to arrange the x‑axis:
-*`"mean"`* – groups ordered by decreasing group mean;
-*`"group"`* – natural sort of group labels;
-*`NULL`* – keep original ordering.}
+*`"mean"`* – groups ordered by decreasing group mean;
+*`"group"`* – natural sort of group labels;
+*`NULL`* – keep original ordering.}
 
 \item{scale}{Logical; if `TRUE` scores are centred/scaled (Z‑score) prior
 to plotting.}
@@ -56,10 +54,10 @@ This function allows to the user to examine the distribution of
 enrichment across groups by generating a geyser plot.
 }
 \examples{
-gs <- list(Bcells = c("MS4A1","CD79B","CD79A"),
-           Tcells = c("CD3E","CD3D","CD3G","CD7","CD8A"))
-p
-bmc <- SeuratObject::pbmc_small |>
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+           Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+           
+pbmc <- SeuratObject::pbmc_small |>
   runEscape(gene.sets = gs,
             min.size = NULL)
 

@@ -9,7 +9,7 @@ splitEnrichment(
   assay = NULL,
   split.by = NULL,
   group.by = NULL,
-  gene.set = NULL,
+  gene.set.use = NULL,
   order.by = NULL,
   facet.by = NULL,
   scale = TRUE,
@@ -17,35 +17,34 @@ splitEnrichment(
 )
 }
 \arguments{
-\item{input.data}{A matrix or single-cell object (e.g., Seurat or 
-SingleCellExperiment) containing enrichment scores from 
-\code{\link{escape.matrix}} or \code{\link{runEscape}}.}
+\item{input.data}{Output of \code{\link{escape.matrix}} or a single‑cell
+object previously processed by \code{\link{runEscape}}.}
 
-\item{assay}{Name of the assay containing enrichment scores if `input.data` 
-is a single-cell object.}
+\item{assay}{Name of the assay holding enrichment scores when
+`input.data` is a single‑cell object. Ignored otherwise.}
 
 \item{split.by}{A metadata column used to split or color violins. Must contain 
 at least two levels. If it contains more than two, dodged violins are used.}
 
-\item{group.by}{Metadata column used for the x-axis grouping. If not specified, 
-defaults to \code{"ident"}.}
+\item{group.by}{Metadata column plotted on the *x*‑axis.  Defaults to the
+Seurat/SCE `ident` slot when `NULL`.}
 
-\item{gene.set}{Name of the gene set to visualize on the y-axis.}
+\item{gene.set.use}{Character(1).  Name of the gene set to display.}
 
-\item{order.by}{Method to order the x-axis: either \code{"mean"} to order by 
-mean enrichment, \code{"group"} for alphanumerical order, or \code{NULL} 
-to retain the original order.}
+\item{order.by}{How to arrange the x‑axis:
+*`"mean"`* – groups ordered by decreasing group mean;
+*`"group"`* – natural sort of group labels;
+*`NULL`* – keep original ordering.}
 
-\item{facet.by}{Optional metadata column used to facet the plot into multiple panels.}
+\item{facet.by}{Optional metadata column used to facet the plot.}
 
-\item{scale}{Logical; if \code{TRUE}, enrichment values are Z-transformed 
-prior to plotting.}
+\item{scale}{Logical; if `TRUE` scores are centred/scaled (Z‑score) prior
+to plotting.}
 
-\item{palette}{Color palette to use for fill aesthetics. Must be a valid 
-palette from \code{\link[grDevices]{hcl.pals}}.}
+\item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }
 \value{
-A \code{ggplot2} object displaying enrichment score distributions by group.
+A [ggplot2] object.
 }
 \description{
 Visualize the distribution of gene set enrichment scores across groups using
@@ -54,18 +53,15 @@ split violins for easy group comparison within each `group.by` category. If
 `split.by` has more than two levels, standard dodged violins are drawn instead.
 }
 \examples{
-gene.sets <- list(
-  Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
-  Tcells = c("CD3E", "CD3D", "CD3G", "CD7", "CD8A")
-)
-pbmc_small <- SeuratObject::pbmc_small
-pbmc_small <- runEscape(pbmc_small, gene.sets = gene.sets)
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+           Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+           
+pbmc <- SeuratObject::pbmc_small |>
+  runEscape(gene.sets = gs, min.size = NULL)
 
-splitEnrichment(
-  input.data = pbmc_small,
-  assay = "escape",
-  split.by = "groups",
-  gene.set = "Tcells"
-)
+splitEnrichment(input.data = pbmc,
+                assay = "escape",
+                split.by = "groups",
+                gene.set.use = "Tcells")
 
 }

@@ -104,7 +104,7 @@ splitEnrichment <- function(input.data,
   return(plot)
 }
 
-Developing split violin plot
+#Developing split violin plot
 #Code from: https://stackoverflow.com/a/45614547
 GeomSplitViolin <- ggproto("GeomSplitViolin", GeomViolin, 
                            draw_group = function(self, data, ..., draw_quantiles = NULL) {

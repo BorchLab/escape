@@ -2,7 +2,7 @@
 % Please edit documentation in R/pcaEnrichment.R
 \name{pcaEnrichment}
 \alias{pcaEnrichment}
-\title{Visualize the PCA of enrichment values}
+\title{Visualize the PCA of Enrichment Values}
 \usage{
 pcaEnrichment(
   input.data,
@@ -22,11 +22,11 @@ pcaEnrichment(
 returned by [`performPCA()`].}
 
 \item{dimRed}{Name of the dimensional‑reduction slot to pull from a
-single‑cell object.  Ignored when `input.data` is the list output.}
+single‑cell object. Ignored when `input.data` is the list output.}
 
 \item{x.axis, y.axis}{Character vectors naming the PCs to display (e.g. "PC1").}
 
-\item{facet.by}{Metadata column to facet by (single‑cell objects only).}
+\item{facet.by}{Metadata column to facet plot.}
 
 \item{style}{"point" (default) or "hex".}
 
@@ -37,7 +37,7 @@ single‑cell object.  Ignored when `input.data` is the list output.}
 \item{number.of.factors}{Integer; how many loadings to display if
 `display.factors = TRUE`.}
 
-\item{palette}{Name passed to [grDevices::hcl.colors()].
+\item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 
 #' @examples 
 GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),

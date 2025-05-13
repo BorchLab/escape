@@ -16,20 +16,20 @@ getGeneSets(
 \arguments{
 \item{species}{`"Homo sapiens"` (default) or `"Mus musculus"`.}
 
-\item{library}{Optional vector of main collection codes (e.g. `"H"`, `"C5"`).}
+\item{library}{Character. Optional vector of main collection codes 
+(e.g. `"H"`, `"C5"`).}
 
-\item{subcategory}{Optional vector of sub-collection codes (e.g. `"GO:BP"`).}
+\item{subcategory}{Character. Optional vector of sub-collection codes 
+(e.g. `"GO:BP"`).}
 
-\item{gene.sets}{Optional vector of specific gene-set names.}
+\item{gene.sets}{Character. Optional vector of specific gene-set names.}
 
 \item{version}{MSigDB version (character, default `"7.4"`).}
 
 \item{id}{Identifier type (default `"SYM"` for symbols).}
 }
 \value{
-A named `list` of character vectors (gene IDs).  
-        If **GSEABase** is installed, the function also returns (invisibly)
-        a `GeneSetCollection` with the same content.
+A named `list` of character vectors (gene IDs).
 }
 \description{
 This function retrieves gene sets from msigdb and caches the downloaded object 

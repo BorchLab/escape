@@ -5,7 +5,7 @@
 \title{Perform Normalization on Enrichment Data}
 \usage{
 performNormalization(
-  sc.data,
+  input.data,
   enrichment.data = NULL,
   assay = "escape",
   gene.sets = NULL,
@@ -15,30 +15,32 @@ performNormalization(
 )
 }
 \arguments{
-\item{sc.data}{Single‑cell object used to generate *raw* enrichment, or a
-matrix of counts (cells × genes) when `enrichment.data`
-is supplied.}
+\item{input.data}{raw‐counts matrix (`genes × cells`), a 
+\link[SeuratObject]{Seurat} object, or a 
+\link[SingleCellExperiment]{SingleCellExperiment}. Gene identifiers must
+match those in `gene.sets`.}
 
-\item{enrichment.data}{Matrix with raw enrichment scores (cells × gene sets).
-Required when `sc.data` is a plain matrix.}
+\item{enrichment.data}{Output of \code{\link{escape.matrix}} or a single‑cell
+object previously processed by \code{\link{runEscape}}.}
 
-\item{assay}{Name of the assay to read/write inside `sc.data` when it
-is a Seurat / SCE object. Default is "escape".}
+\item{assay}{Name of the assay holding enrichment scores when
+`input.data` is a single‑cell object. Ignored otherwise.}
 
-\item{gene.sets}{The gene‑set definitions originally used. Needed to count
-expressed genes per set.}
+\item{gene.sets}{A named list of character vectors, the result of
+[getGeneSets()], or the built-in data object
+[escape.gene.sets].  List names become column names in the result.}
 
 \item{make.positive}{Logical; if `TRUE` shifts each column so its minimum is
 zero.}
 
 \item{scale.factor}{Optional numeric vector overriding gene‑count scaling
-(length = #cells). Use when you want external per‑cell
-normalization factors.}
+(length = #cells). Use when you want external per‑cell normalization factors.}
 
-\item{groups}{Chunk size (cells per block) when memory is limited.}
+\item{groups}{Integer ≥ 1.  Number of cells per processing chunk.
+Larger values reduce overhead but increase memory usage.  Default **1000**.}
 }
 \value{
-If `sc.data` is an object, the same object with a new assay
+If `input.data` is an object, the same object with a new assay
         "<assay>_normalized". Otherwise a matrix of normalized scores.
 }
 \description{
@@ -50,13 +52,13 @@ log‑based differential tests.
 \examples{
 GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
-pbmc_small <- SeuratObject::pbmc_small
-pbmc_small <- runEscape(pbmc_small, 
-                        gene.sets = GS, 
-                        min.size = NULL)
+
+pbmc <- SeuratObject::pbmc_small |>
+  runEscape(gene.sets = gs,
+            min.size = NULL)
                         
-pbmc_small <- performNormalization(pbmc_small, 
-                                   assay = "escape", 
-                                   gene.sets = GS)
+pbmc <- performNormalization(pbmc, 
+                             assay = "escape", 
+                             gene.sets = GS)
 
 }
