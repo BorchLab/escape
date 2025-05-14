@@ -11,8 +11,10 @@ gseaEnrichment(
   group.by = NULL,
   summary.fun = "mean",
   p = 1,
+  nperm = 1000,
   rug.height = 0.02,
   digits = 2,
+  BPPARAM = BiocParallel::SerialParam(),
   palette = "inferno"
 )
 }
@@ -36,6 +38,10 @@ y-axis (default `0.02`).}
 \item{digits}{Number of decimal places displayed for ES in the
 legend (default `2`).}
 
+\item{BPPARAM}{A \pkg{BiocParallel} parameter object describing the
+parallel backend. Default is `BiocParallel::SerialParam()` (serial
+execution).}
+
 \item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }
 \value{
@@ -44,10 +50,7 @@ A single `patchwork`/`ggplot2` object
 \description{
 Produces the familiar two-panel GSEA graphic—running enrichment score
 (RES) plus a “hit” rug—for a **single gene-set** evaluated across
-multiple biological groups (clusters, conditions, samples, …).  
-The maximal signed deviation of each running-score curve is taken as
-the enrichment score (**ES**) and printed directly inside the legend
-label, e.g. `Cluster-A (ES = 1.42)`.
+multiple biological groups (clusters, conditions, samples, ...).
 }
 \details{
 **Algorithm (Subramanian _et al._, PNAS 2005)**  
@@ -61,12 +64,14 @@ label, e.g. `Cluster-A (ES = 1.42)`.
 \examples{
 pbmc_small <- SeuratObject::pbmc_small
 
-GS <- list(Immune = c("CD3D","CD3E","CD3G","MS4A1","CD79A","CD79B"))
+GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+           Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+
 gseaEnrichment(pbmc_small,
-               gene.set.use = "Immune",
+               gene.set.use = "Bcells",
                gene.sets    = GS,
                group.by     = "groups",
-               summary.fun  = "median",
+               summary.fun  = "mean",
                digits       = 3)
 
 }

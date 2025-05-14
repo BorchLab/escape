@@ -12,6 +12,8 @@
 #' [getGeneSets()], or the built-in data object [escape.gene.sets].
 #' @param group.by Metadata column. Defaults to the Seurat/SCE `ident` 
 #' slot when `NULL`.
+#' @param rug.height Vertical spacing of the hit rug as a fraction of the
+#' y-axis (default `0.02`).
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'
 #' @examples
@@ -29,11 +31,13 @@
 #'
 #' @import ggplot2
 #' @import patchwork
+#' @importFrom stats na.omit
 #' @importFrom MatrixGenerics rowMeans2
 densityEnrichment <- function(input.data,
                               gene.set.use,
                               gene.sets,
                               group.by = NULL,
+                              rug.height  = 0.02,
                               palette  = "inferno") {
   ## -------- 0  Input checks --------------------------------------------------
   .checkSingleObject(input.data)
@@ -99,7 +103,7 @@ densityEnrichment <- function(input.data,
           axis.ticks.x = element_blank())
   
   ## simple segment plot for mean-rank positions
-  offset <- 0.2
+  offset <- rug.height
   seg.df <- within(plot.df, {
     ord   <- match(variable, unique(variable))
     y     <- -(ord * offset - offset)
@@ -116,7 +120,7 @@ densityEnrichment <- function(input.data,
     theme(axis.title.y = element_blank(),
           axis.text.y  = element_blank(),
           axis.ticks.y = element_blank(),
-          panel.background = element_rect(fill = NA, colour = "black"))
+          panel.border = element_rect(fill = NA, colour = "black"))
   
   p1 / p2 + patchwork::plot_layout(heights = c(3, 1))
 }

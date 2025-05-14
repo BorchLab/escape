@@ -9,6 +9,7 @@ densityEnrichment(
   gene.set.use,
   gene.sets,
   group.by = NULL,
+  rug.height = 0.02,
   palette = "inferno"
 )
 }
@@ -23,6 +24,9 @@ densityEnrichment(
 
 \item{group.by}{Metadata column. Defaults to the Seurat/SCE `ident` 
 slot when `NULL`.}
+
+\item{rug.height}{Vertical spacing of the hit rug as a fraction of the
+y-axis (default `0.02`).}
 
 \item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }

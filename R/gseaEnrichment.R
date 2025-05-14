@@ -2,10 +2,7 @@
 #'
 #' Produces the familiar two-panel GSEA graphic—running enrichment score
 #' (RES) plus a “hit” rug—for a **single gene-set** evaluated across
-#' multiple biological groups (clusters, conditions, samples, …).  
-#' The maximal signed deviation of each running-score curve is taken as
-#' the enrichment score (**ES**) and printed directly inside the legend
-#' label, e.g. `Cluster-A (ES = 1.42)`.  
+#' multiple biological groups (clusters, conditions, samples, ...).  
 #'
 #' **Algorithm (Subramanian _et al._, PNAS 2005)**  
 #' 1. Within every group, library-size-normalise counts to CPM.  
@@ -22,29 +19,36 @@
 #' [getGeneSets()], or the built-in data object [escape.gene.sets].
 #' @param group.by Metadata column. Defaults to the Seurat/SCE `ident` 
 #' slot when `NULL`.
-#' @param summary.fun  Method used to collapse expression within each
+#' @param summary.fun Method used to collapse expression within each
 #* group **before** ranking: one of `"mean"` (default), `"median"`, `"max"`,
 #*`"sum"`, or `"geometric"`
 #* @param p Weighting exponent in the KS statistic (classical GSEA uses `p = 1`).
-#' @param rug.height   Vertical spacing of the hit rug as a fraction of the
+#* @param nperm Integer ≥ 0. Gene-label permutations per group (default 1000). 
+#* `0` value will skip NES/*p* calculation.
+#' @param rug.height Vertical spacing of the hit rug as a fraction of the
 #' y-axis (default `0.02`).
-#' @param digits       Number of decimal places displayed for ES in the
+#' @param digits Number of decimal places displayed for ES in the
 #' legend (default `2`).
+#' @param BPPARAM A \pkg{BiocParallel} parameter object describing the
+#' parallel backend. Default is `BiocParallel::SerialParam()` (serial
+#' execution).
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'  
 #' @examples
 #' pbmc_small <- SeuratObject::pbmc_small
 #'
-#' GS <- list(Immune = c("CD3D","CD3E","CD3G","MS4A1","CD79A","CD79B"))
-
+#' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+#'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+#' 
 #' gseaEnrichment(pbmc_small,
-#'                gene.set.use = "Immune",
+#'                gene.set.use = "Bcells",
 #'                gene.sets    = GS,
 #'                group.by     = "groups",
-#'                summary.fun  = "median",
+#'                summary.fun  = "mean",
 #'                digits       = 3)
 #'
 #' @seealso \code{\link{escape.matrix}}, \code{\link{densityEnrichment}}
+#' @importFrom stats na.omit
 #' @return A single `patchwork`/`ggplot2` object
 #' @export
 gseaEnrichment <- function(input.data,
@@ -53,11 +57,13 @@ gseaEnrichment <- function(input.data,
                            group.by    = NULL,
                            summary.fun = "mean",
                            p           = 1,
+                           nperm       = 1000,
                            rug.height  = 0.02,
                            digits      = 2,
+                           BPPARAM     = BiocParallel::SerialParam(),
                            palette     = "inferno") {
   
-  ## ---------- 0  Checks (unchanged) ----------------------------------------
+  ## ---- 0.  Checks ----------------------------------------------------------
   gene.sets <- .GS.check(gene.sets)
   if (length(gene.set.use) != 1L)
     stop("'gene.set.use' must be length 1")
@@ -69,18 +75,17 @@ gseaEnrichment <- function(input.data,
   if (!group.by %in% colnames(meta))
     stop("'", group.by, "' not found in metadata")
   
-  groups <- na.omit(unique(meta[[group.by]]))
+  groups <- stats::na.omit(unique(meta[[group.by]]))
   if (length(groups) < 2)
-    stop("Need 2 groups or more")
+    stop("Need 2 or more groups")
   
   summary.fun <- .match_summary_fun(summary.fun)
   
-  ## ---------- 1  Expression & ranking vectors ------------------------------
-  cnts <- .cntEval(input.data, assay = "RNA", type = "counts")
-  cnts <- .filterFeatures(cnts)
+  ## ---- 1.  Expression matrix & rankings ------------------------------------
+  cnts <- .cntEval(input.data, assay = "RNA", type = "counts") |>
+    .filterFeatures()
   
-  gene.order <- rownames(cnts)
-  gs.genes   <- intersect(gene.sets[[gene.set.use]], gene.order)
+  gs.genes <- intersect(gene.sets[[gene.set.use]], rownames(cnts))
   if (!length(gs.genes))
     stop("Gene-set has no overlap with the matrix")
   
@@ -101,107 +106,89 @@ gseaEnrichment <- function(input.data,
     sort(stat, decreasing = TRUE)
   })
   names(ranking.list) <- groups
+  n.genes <- length(ranking.list[[1L]])
   
-  ## ---------- 2  Running ES & add ES to legend ------------------------------
-  es.vec  <- numeric(length(groups))
+  ## ---- 2.  ES, NES, p-value per group --------------------------------------
+  es      <- nes <- pval <- numeric(length(groups))
   curves  <- vector("list", length(groups))
   
   for (i in seq_along(groups)) {
     rvec        <- ranking.list[[i]]
     weight      <- abs(rvec[gs.genes])^p
     curves[[i]] <- .computeRunningES(names(rvec), gs.genes, weight)
-    es.vec[i]   <- ifelse(max(abs(curves[[i]])) == abs(max(curves[[i]])),
+    es[i]       <- ifelse(max(abs(curves[[i]])) == abs(max(curves[[i]])),
                           max(curves[[i]]), min(curves[[i]]))
+    
+    ## ---- permutation null --------------------------------------------------
+    if (nperm > 0) {
+      nullES <- BiocParallel::bplapply(
+        seq_len(nperm),
+        function(xx) {
+          hits   <- sample.int(n.genes, length(gs.genes))
+          weight <- abs(rvec[hits])^p
+          cur    <- .computeRunningES(names(rvec), names(rvec)[hits], weight)
+          ifelse(max(abs(cur)) == abs(max(cur)), max(cur), min(cur))
+        },
+        BPPARAM = BPPARAM
+      )
+      nullES <- unlist(nullES, use.names = FALSE)
+      
+      nes[i]  <- es[i] / mean(abs(nullES))
+      pval[i] <- (sum(abs(nullES) >= abs(es[i])) + 1) / (nperm + 1)
+    } else {
+      nes[i]  <- NA_real_
+      pval[i] <- NA_real_
+    }
   }
   
-  # Build pretty legend labels: Group (ES = 1.23)
+  ## ---- 3.  Legend labels ----------------------------------------------------
+  labES  <- formatC(es,  digits = digits, format = "f")
+  labNES <- formatC(nes, digits = digits, format = "f")
+  labP   <- ifelse(is.na(pval), "NA",
+                   formatC(pval, digits = 2, format = "e"))
   pretty.grp <- paste0(groups,
-                       " (ES = ", formatC(es.vec, digits = digits, format = "f"),
-                       ")")
+                       " (NES = ", labNES,
+                       ", p = ", labP, ")")
   
-  ## ---------- 3  Data frames for ggplot -------------------------------------
+  ## ---- 4.  Data frames for ggplot ------------------------------------------
   running.df <- data.frame(
-    rank = rep(seq_along(ranking.list[[1]]), times = length(groups)),
+    rank = rep(seq_len(n.genes), times = length(groups)),
     ES   = unlist(curves, use.names = FALSE),
-    grp  = factor(rep(pretty.grp, each = length(curves[[1]])),
-                  levels = pretty.grp)
+    grp  = factor(rep(pretty.grp, each = n.genes), levels = pretty.grp)
   )
   
   rug.df <- do.call(rbind, lapply(seq_along(groups), function(i) {
-    data.frame(x    = which(names(ranking.list[[i]]) %in% gs.genes),
-               y    = -(i-1)*rug.height,
-               xend = which(names(ranking.list[[i]]) %in% gs.genes),
-               yend = -(i)*rug.height,
-               grp  = pretty.grp[i])
+    data.frame(
+      x    = which(names(ranking.list[[i]]) %in% gs.genes),
+      y    = -(i-1)*rug.height,
+      xend = which(names(ranking.list[[i]]) %in% gs.genes),
+      yend = -(i)*rug.height,
+      grp  = pretty.grp[i])
   }))
   
-  ## ---------- 4  Plot -------------------------------------------------------
+  ## ---- 5.  Plot -------------------------------------------------------------
   cols <- .colorizer(palette, length(groups))
   
-  p_top <- ggplot(running.df, aes(rank, ES, colour = grp)) +
-    geom_step(linewidth = 0.8) +
-    scale_colour_manual(values = cols, name = NULL) +
-    labs(y = "Running Enrichment Score") +
+  p_top <- ggplot2::ggplot(running.df, ggplot2::aes(rank, ES, colour = grp)) +
+    ggplot2::geom_step(linewidth = 0.8) +
+    ggplot2::scale_colour_manual(values = cols, name = NULL) +
+    ggplot2::labs(y = "Running Enrichment Score") +
+    ggplot2::theme_classic() +
+    ggplot2::theme(axis.title.x = element_blank(),
+                   axis.text.x  = element_blank(),
+                   axis.ticks.x = element_blank())
+  
+  p_mid <- ggplot2::ggplot(rug.df) +
+    ggplot2::geom_segment(ggplot2::aes(x, y, xend = xend, yend = yend,
+                                       colour = grp)) +
+    ggplot2::scale_colour_manual(values = cols, guide = "none") +
     theme_classic() +
-    theme(axis.title.x = element_blank(),
-          axis.text.x  = element_blank(),
-          axis.ticks.x = element_blank())
-  
-  p_mid <- ggplot(rug.df) +
-    geom_segment(aes(x, y, xend = xend, yend = yend, colour = grp)) +
-    scale_colour_manual(values = cols, guide = "none") +
-    theme_void() +
-    ylim(-length(groups)*rug.height, 0)
-  
+    ggplot2::ylim(-length(groups)*rug.height, 0) + 
+    theme(axis.title = element_blank(),
+          axis.text.y  = element_blank(),
+          axis.ticks.y = element_blank(),
+          panel.border = element_rect(fill = NA, colour = "black", linewidth = 0.5))
+   
   p_top / p_mid + patchwork::plot_layout(heights = c(3, 0.4))
 }
 
-#---------------- Helper: wrap summary.fun keyword ---------------------------
-.match_summary_fun <- function(fun) {
-  if (is.function(fun)) return(fun)
-  
-  if (!is.character(fun) || length(fun) != 1L)
-    stop("'summary.fun' must be a single character or a function")
-  
-  kw <- tolower(fun)
-  fn <- switch(kw,
-               mean      = base::mean,
-               median    = stats::median,
-               max       = base::max,
-               sum       = base::sum,
-               geometric = function(x) exp(mean(log(x + 1e-6))),
-               stop("Unsupported summary keyword: ", fun))
-  attr(fn, "keyword") <- kw               # tag for fast matrixStats branch
-  fn
-}
-
-#------------ Helper: running ES (unchanged) ---------------------------------
-.computeRunningES <- function(gene.order, hits, weight = NULL) {
-  N   <- length(gene.order)
-  hit <- gene.order %in% hits
-  Nh  <- sum(hit)
-  Nm  <- N - Nh
-  if (is.null(weight)) weight <- rep(1, Nh)
-  
-  Phit          <- rep(0, N)
-  Phit[hit]     <- weight / sum(weight)
-  Pmiss         <- rep(-1 / Nm, N)
-  cumsum(Phit + Pmiss)
-}
-
-# Modified from GSVA
-#' @importFrom MatrixGenerics rowSds
-.filterFeatures <- function(expr) {
-  sdGenes <- rowSds(expr)
-  sdGenes[sdGenes < 1e-10] <- 0
-  if (any(sdGenes == 0) || any(is.na(sdGenes))) {
-    expr <- expr[sdGenes > 0 & !is.na(sdGenes), ]
-  }
-  
-  if (nrow(expr) < 2)
-    stop("Less than two genes in the input assay object\n")
-  
-  if(is.null(rownames(expr)))
-    stop("The input assay object doesn't have rownames\n")
-  expr
-}
