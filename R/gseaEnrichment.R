@@ -33,7 +33,7 @@
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'  
 #' @examples
-#' data(pbmc_small)
+#' pbmc_small <- SeuratObject::pbmc_small
 #'
 #' GS <- list(Immune = c("CD3D","CD3E","CD3G","MS4A1","CD79A","CD79B"))
 
@@ -87,10 +87,10 @@ gseaEnrichment <- function(input.data,
   getStats <- function(mat) {
     switch(attr(summary.fun, "keyword"),
            mean      = MatrixGenerics::rowMeans2(mat),
-           median    = matrixGenerics::rowMedians(mat),
-           max       = matrixGenerics::rowMaxs(mat),
-           sum       = matrixGenerics::rowSums2(mat),
-           geometric = exp(matrixGenerics::rowMeans2(log(mat + 1e-6))),
+           median    = MatrixGenerics::rowMedians(mat),
+           max       = MatrixGenerics::rowMaxs(mat),
+           sum       = MatrixGenerics::rowSums2(mat),
+           geometric = exp(MatrixGenerics::rowMeans2(log(mat + 1e-6))),
            summary.fun(mat))
   }
   

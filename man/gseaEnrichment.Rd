@@ -59,7 +59,7 @@ label, e.g. `Cluster-A (ES = 1.42)`.
 5. ES = maximum signed deviation of the curve.
 }
 \examples{
-data(pbmc_small)
+pbmc_small <- SeuratObject::pbmc_small
 
 GS <- list(Immune = c("CD3D","CD3E","CD3G","MS4A1","CD79A","CD79B"))
 gseaEnrichment(pbmc_small,
