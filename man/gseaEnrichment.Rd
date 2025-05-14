@@ -39,8 +39,7 @@ legend (default `2`).}
 \item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }
 \value{
-A single `patchwork`/`ggplot2` object that can be further
-  modified with `+` (e.g. `+ ggtitle()`).
+A single `patchwork`/`ggplot2` object
 }
 \description{
 Produces the familiar two-panel GSEA graphic—running enrichment score

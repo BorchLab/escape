@@ -31,11 +31,7 @@
 #' @param digits       Number of decimal places displayed for ES in the
 #' legend (default `2`).
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
-
-#'
-#' @return A single `patchwork`/`ggplot2` object that can be further
-#'   modified with `+` (e.g. `+ ggtitle()`).
-#'
+#'  
 #' @examples
 #' data(pbmc_small)
 #'
@@ -49,6 +45,8 @@
 #'                digits       = 3)
 #'
 #' @seealso \code{\link{escape.matrix}}, \code{\link{densityEnrichment}}
+#' @return A single `patchwork`/`ggplot2` object
+#' @export
 gseaEnrichment <- function(input.data,
                            gene.set.use,
                            gene.sets,
