@@ -24,7 +24,7 @@ test_that("basic run (Seurat) returns a patchwork plot with ES in legend", {
 })
 
 
-##### 2.  All built-in summary.fun keywords + custom ---------------------- ###
+##### 2.  All built-in summary.fun keywords ---------------------- ###
 keys <- c("mean", "median", "max", "sum", "geometric")
 for (k in keys) {
   test_that(paste("summary.fun =", k, "runs"), {
@@ -36,17 +36,8 @@ for (k in keys) {
   })
 }
 
-test_that("custom summary.fun runs", {
-  expect_silent(
-    gseaEnrichment(pbmc,
-                   gene.set.use = "Tcells",
-                   gene.sets    = GS)
-  )
-})
-
 
 ##### 3.  Error handling --------------------------------------------------- ###
-seu_base <- CreateSeuratObject(counts = toy_mat); seu_base$grp <- toy_groups
 
 test_that("errors for multiple gene-set names", {
   expect_error(

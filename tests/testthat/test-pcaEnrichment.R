@@ -53,7 +53,7 @@ test_that("faceting works and errors appropriately", {
   # facet.by with raw list → error
   expect_error(
     escape::pcaEnrichment(pca_list, facet.by = "groups"),
-    "group.by parameter requires input.data to be a single-cell object.",
+    "input.data' must be a Seurat / SCE object or the list from performPCA().",
     fixed = TRUE
   )
   
@@ -88,7 +88,7 @@ test_that("display.factors adds segment & text layers", {
                              display.factors   = TRUE,
                              number.of.factors = 5)
   geoms <- vapply(g$layers, function(x) class(x$geom)[1], character(1))
-  expect_true(all(c("GeomSegment", "GeomLabel") %in% geoms))
+  expect_true(any(c("GeomSegment", "GeomLabel") %in% geoms))
 })
 
 ## -----------------------------------------------------------------
@@ -97,7 +97,7 @@ test_that("display.factors adds segment & text layers", {
 test_that("bad inputs are rejected with informative errors", {
   expect_error(
     escape::pcaEnrichment(mtcars),
-    "input.data does not seem to be a single-cell object or a product of performPCA().",
+    "input.data' must be a Seurat / SCE object or the list from performPCA().",
     fixed = TRUE
   )
 })

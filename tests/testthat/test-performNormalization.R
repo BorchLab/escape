@@ -26,7 +26,7 @@ toy_sets <- list(
 # --------------------------------------------------------------------------
 test_that("matrix input: internal scale factors + log transform", {
   norm <- performNormalization(
-    sc.data         = toy_counts,
+    input.data         = toy_counts,
     enrichment.data = toy_enrich,
     gene.sets       = toy_sets
   )
@@ -49,7 +49,7 @@ test_that("matrix input: internal scale factors + log transform", {
 test_that("matrix input: external scale.factor bypasses log step", {
   ext_sf <- c(2, 2, 2, 2)                       # one per cell
   norm <- performNormalization(
-    sc.data         = toy_counts,
+    input.data         = toy_counts,
     enrichment.data = toy_enrich,
     gene.sets       = toy_sets,
     scale.factor    = ext_sf
@@ -60,13 +60,13 @@ test_that("matrix input: external scale.factor bypasses log step", {
 # --------------------------------------------------------------------------
 test_that("chunked processing (groups) reproduces full result", {
   full <- performNormalization(
-    sc.data         = toy_counts,
+    input.data         = toy_counts,
     enrichment.data = toy_enrich,
     gene.sets       = toy_sets,
     scale.factor    = rep(1, 4)
   )
   chunked <- performNormalization(
-    sc.data         = toy_counts,
+    input.data         = toy_counts,
     enrichment.data = toy_enrich,
     gene.sets       = toy_sets,
     scale.factor    = rep(1, 4),
@@ -80,7 +80,7 @@ test_that("error handling works", {
   # scale.factor length mismatch
   expect_error(
     performNormalization(
-      sc.data         = toy_counts,
+      input.data         = toy_counts,
       enrichment.data = toy_enrich,
       gene.sets       = toy_sets,
       scale.factor    = c(1, 2)                 # wrong length
@@ -91,7 +91,7 @@ test_that("error handling works", {
   # missing enrichment matrix
   expect_error(
     performNormalization(
-      sc.data   = toy_counts,
+      input.data   = toy_counts,
       gene.sets = toy_sets
     ),
     "obtain enrichment matrix"
@@ -101,7 +101,7 @@ test_that("error handling works", {
   bad_sets <- list(Other = c("g1", "g2"))
   expect_error(
     performNormalization(
-      sc.data         = toy_counts,
+      input.data         = toy_counts,
       enrichment.data = toy_enrich,
       gene.sets       = bad_sets
     ),
