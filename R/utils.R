@@ -84,6 +84,7 @@
   grDevices::hcl.colors(n = n, palette = palette, fixup = TRUE)
 }
 
+#' @importFrom stats setNames
 .colorby <- function(enriched,
                      plot,
                      color.by,
@@ -291,5 +292,60 @@
   idx <- split(seq_len(ncol(mat)), ceiling(seq_len(ncol(mat)) / chunk))
   lapply(idx, function(i) mat[, i, drop = FALSE])
 }
+
+.match_summary_fun <- function(fun) {
+  if (is.function(fun)) return(fun)
+  
+  if (!is.character(fun) || length(fun) != 1L)
+    stop("'summary.fun' must be a single character or a function")
+  
+  kw <- tolower(fun)
+  fn <- switch(kw,
+               mean      = base::mean,
+               median    = stats::median,
+               max       = base::max,
+               sum       = base::sum,
+               geometric = function(x) exp(mean(log(x + 1e-6))),
+               stop("Unsupported summary keyword: ", fun))
+  attr(fn, "keyword") <- kw               # tag for fast matrixStats branch
+  fn
+}
+
+.computeRunningES <- function(gene.order, hits, weight = NULL) {
+  N   <- length(gene.order)
+  hit <- gene.order %in% hits
+  Nh  <- sum(hit)
+  Nm  <- N - Nh
+  if (is.null(weight)) weight <- rep(1, Nh)
+  
+  Phit          <- rep(0, N)
+  Phit[hit]     <- weight / sum(weight)
+  Pmiss         <- rep(-1 / Nm, N)
+  cumsum(Phit + Pmiss)
+}
+
+
+# Modified from GSVA
+#' @importFrom MatrixGenerics rowSds
+.filterFeatures <- function(expr) {
+  sdGenes <- rowSds(expr)
+  sdGenes[sdGenes < 1e-10] <- 0
+  if (any(sdGenes == 0) || any(is.na(sdGenes))) {
+    expr <- expr[sdGenes > 0 & !is.na(sdGenes), ]
+  }
+  
+  if (nrow(expr) < 2)
+    stop("Less than two genes in the input assay object\n")
+  
+  if(is.null(rownames(expr)))
+    stop("The input assay object doesn't have rownames\n")
+  expr
+}
+
+utils::globalVariables(c(
+  "ES", "grp", "x", "y", "xend", "yend", "group", "value", "variable",
+  "gene.set.query", "median", ".computeRunningES", ".filterFeatures", 
+  ".match_summary_fun"
+))
 
 
