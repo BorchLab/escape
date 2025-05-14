@@ -344,8 +344,7 @@
 
 utils::globalVariables(c(
   "ES", "grp", "x", "y", "xend", "yend", "group", "value", "variable",
-  "gene.set.query", "median", ".computeRunningES", ".filterFeatures", 
-  ".match_summary_fun"
+  "gene.set.query"
 ))
 
 
