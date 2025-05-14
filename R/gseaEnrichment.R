@@ -90,19 +90,24 @@ gseaEnrichment <- function(input.data,
     stop("Gene-set has no overlap with the matrix")
   
   getStats <- function(mat) {
-    switch(attr(summary.fun, "keyword"),
+    keyword <- attr(summary.fun, "keyword")
+    switch(keyword,
            mean      = MatrixGenerics::rowMeans2(mat),
            median    = MatrixGenerics::rowMedians(mat),
            max       = MatrixGenerics::rowMaxs(mat),
            sum       = MatrixGenerics::rowSums2(mat),
-           geometric = exp(MatrixGenerics::rowMeans2(log(mat + 1e-6))),
-           summary.fun(mat))
+           geometric = exp(MatrixGenerics::rowMeans2(log1p(mat))))  # log1p is sparse-safe
   }
   
   ranking.list <- lapply(groups, function(g) {
     idx  <- which(meta[[group.by]] == g)
-    lib  <- Matrix::colSums(cnts[, idx, drop = FALSE])
-    stat <- getStats(t(t(cnts[, idx, drop = FALSE]) / lib) * 1e6)
+    lib  <- Matrix::colSums(cnts[, idx, drop = FALSE]) / 1e6  # CPM scale
+    sub  <- cnts[, idx, drop = FALSE]
+    
+    # Sparse-safe column normalization using Diagonal
+    norm <- sub %*% Matrix::Diagonal(x = 1 / lib)
+    
+    stat <- getStats(norm)
     sort(stat, decreasing = TRUE)
   })
   names(ranking.list) <- groups
