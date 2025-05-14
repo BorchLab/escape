@@ -39,7 +39,7 @@ accepted.}
 *`"group"`* – natural sort of group labels;
 *`NULL`* – keep original ordering.}
 
-\item{scale}{Logical; if `TRUE` scores are centred/scaled (Z‑score) prior
+\item{scale}{Logical; if `TRUE` scores are centered/scaled (Z‑score) prior
 to plotting.}
 
 \item{facet.by}{Optional metadata column used to facet the plot.}

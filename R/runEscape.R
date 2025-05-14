@@ -81,6 +81,7 @@ escape.matrix <- function(input.data,
                           min.filter.by    = NULL,
                           BPPARAM          = SerialParam(),
                           ...) {
+  if(is.null(min.size)) min.size <- 0
   
   # ---- 1) resolve gene-sets & counts ----------------------------------------
   egc  <- .GS.check(gene.sets)
@@ -110,7 +111,7 @@ escape.matrix <- function(input.data,
   
   # ---- 3) split cells into chunks -------------------------------------------
   chunks <- .split_cols(cnts, groups)
-  message("escape.matrix(): processing ", length(chunks), " chunk(s)…")
+  message("escape.matrix(): processing ", length(chunks), " chunk(s)...")
   
   # ---- 4) compute enrichment in parallel ------------------------------------
   res_list <- BiocParallel::bplapply(
@@ -132,7 +133,7 @@ escape.matrix <- function(input.data,
   # ---- 6) optional dropout scaling ------------------------------------------
   if (normalize) {
     res_mat <- performNormalization(
-      sc.data         = input.data,
+      input.data      = input.data,
       enrichment.data = res_mat,
       assay           = NULL,
       gene.sets       = gene.sets,

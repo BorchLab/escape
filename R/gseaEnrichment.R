@@ -73,7 +73,7 @@ gseaEnrichment <- function(input.data,
   
   groups <- na.omit(unique(meta[[group.by]]))
   if (length(groups) < 2)
-    stop("Need ≥2 groups")
+    stop("Need 2 groups or more")
   
   summary.fun <- .match_summary_fun(summary.fun)
   

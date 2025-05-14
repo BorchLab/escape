@@ -10,10 +10,11 @@
 #' @param x.axis,y.axis Character vectors naming the PCs to display (e.g. "PC1").
 #' @param facet.by Metadata column to facet plot. 
 #' @param style "point" (default) or "hex".
-#' @param add.percent.contribution Include % variance explained in axis labels.
+#' @param add.percent.contribution Include percent variance explained in axis 
+#' labels.
 #' @param display.factors Draw arrows for the top gene‑set loadings.
 #' @param number.of.factors Integer; how many loadings to display if
-#'   `display.factors = TRUE`.
+#' `display.factors = TRUE`.
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #' 
 #' #' @examples 
@@ -55,7 +56,7 @@ pcaEnrichment <- function(input.data,
   } else if (is.list(input.data) && length(input.data) == 4) {
     pca.values <- input.data
     if (!is.null(facet.by))
-      stop("'facet.by' is only valid with a single‑cell object.")
+      stop("facet.by is only valid with a single-cell object.")
   } else {
     stop("'input.data' must be a Seurat / SCE object or the list from performPCA().")
   }
@@ -95,7 +96,7 @@ pcaEnrichment <- function(input.data,
   
   if (style == "point") {
     if (!requireNamespace("ggpointdensity", quietly = TRUE)) {
-      warning("Package 'ggpointdensity' not installed – falling back to alpha‑blended points.")
+      warning("Package `ggpointdensity` not installed, falling back to alpha-blended points")
       g <- g + ggplot2::geom_point(alpha = 0.4, size = 0.6)
     } else {
       g <- g + ggpointdensity::geom_pointdensity() +

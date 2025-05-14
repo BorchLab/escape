@@ -149,7 +149,7 @@ scatterEnrichment <- function(input.data,
                               method = "pearson", use = "pairwise.complete.obs")
     cor_spear   <- stats::cor(enriched[[x.axis]], enriched[[y.axis]],
                               method = "spearman", use = "pairwise.complete.obs")
-    lbl <- sprintf("Pearson r = %.2f\nSpearman ρ = %.2f", cor_pears, cor_spear)
+    lbl <- sprintf("Pearson rho = %.2f\nSpearman rho = %.2f", cor_pears, cor_spear)
     plt <- plt +
       ggplot2::annotate("text", x = -Inf, y = Inf, label = lbl,
                         hjust = 0, vjust = 1, size = 3.5,

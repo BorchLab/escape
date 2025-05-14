@@ -236,7 +236,7 @@
 #─ Ensures a package is present and attaches quietly; 
 .load_backend <- function(pkg) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
-    stop(pkg, " not installed – install or choose a different `method`.",
+    stop(pkg, " not installed, install or choose a different `method`.",
          call. = FALSE)
   }
 }

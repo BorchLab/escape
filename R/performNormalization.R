@@ -6,7 +6,7 @@
 #' positive range and/or applies a natural‑log transform for compatibility with
 #' log‑based differential tests.
 #'
-#' @param input.data  raw‐counts matrix (`genes × cells`), a 
+#' @param input.data raw‐counts matrix (`genes × cells`), a 
 #' \link[SeuratObject]{Seurat} object, or a 
 #' \link[SingleCellExperiment]{SingleCellExperiment}. Gene identifiers must
 #' match those in `gene.sets`.
@@ -59,7 +59,9 @@ performNormalization <- function(input.data,
   }
   
   enriched <- if (assay.present) .pull.Enrich(input.data, assay) else enrichment.data
-  if (is.null(enriched)) stop("Could not obtain enrichment matrix – please set 'assay' or supply 'enrichment.data'.")
+  if (is.null(enriched)) {
+    stop("Could not obtain enrichment matrix, please set `assay` or supply `enrichment.data`.")
+  }
   
   ## ----------------------------------------------------------------------
   ## 2. Validate / derive scale factors ----------------------------------
@@ -74,7 +76,7 @@ performNormalization <- function(input.data,
     
     ## counts matrix (genes × cells) – drop after use to save RAM
     cnts <- .cntEval(input.data, assay = "RNA", type = "counts")
-    message("Computing expressed‑gene counts per cell …")
+    message("Computing expressed-gene counts per cell...")
     scale.mat <- do.call(cbind, lapply(egc, function(gs) {
       vec <- Matrix::colSums(cnts[rownames(cnts) %in% gs, , drop = FALSE] != 0)
       vec[vec == 0] <- 1L  # avoid /0
@@ -90,7 +92,7 @@ performNormalization <- function(input.data,
   
   ## ----------------------------------------------------------------------
   ## 3. Chunked normalisation --------------------------------------------
-  message("Normalising enrichment scores …")
+  message("Normalizing enrichment scores...")
   en.split <- .split_rows(enriched, chunk.size = if (is.null(groups)) nrow(enriched) else min(groups, nrow(enriched)))
   norm.lst <- Map(function(sco, fac) sco / fac, en.split, sf.split)
   normalized <- do.call(rbind, norm.lst)

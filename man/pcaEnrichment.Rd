@@ -30,7 +30,8 @@ single‑cell object. Ignored when `input.data` is the list output.}
 
 \item{style}{"point" (default) or "hex".}
 
-\item{add.percent.contribution}{Include % variance explained in axis labels.}
+\item{add.percent.contribution}{Include percent variance explained in axis 
+labels.}
 
 \item{display.factors}{Draw arrows for the top gene‑set loadings.}
 
