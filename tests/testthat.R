@@ -9,13 +9,4 @@
 library(testthat)
 library(escape)
 
-skip_if_not_installed("SeuratObject", minimum_version = "5.0.0")
-skip_if_not_installed("Seurat")        
-
-suppressPackageStartupMessages({
-  library(SeuratObject)
-  library(Seurat)
-})
-
-
 test_check("escape")
