@@ -153,7 +153,7 @@
   if (.is_seurat(obj)) {
     # use generic accessor to avoid tight coupling to Seurat internals
     if (requireNamespace("SeuratObject", quietly = TRUE)) {
-      cnts <- SeuratObject::GetAssayData(obj, assay = assay, slot = type)
+      suppressWarnings(cnts <- SeuratObject::GetAssayData(obj, assay = assay, slot = type))
     } else {
       cnts <- obj@assays[[assay]][type]
     }
