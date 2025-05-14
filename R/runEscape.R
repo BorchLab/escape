@@ -220,7 +220,8 @@ runEscape <- function(input.data,
   m[keep, , drop = FALSE]
 }
 
-# helper: pull a column from meta.data / colData no matter the object ----------
+# helper: pull a column from meta.data / colData no matter the object ---------
+#' @importFrom SummarizedExperiment colData
 .extract_group_vector <- function(obj, col) {
   if (.is_seurat(obj))
     return(obj[[col, drop = TRUE]])
