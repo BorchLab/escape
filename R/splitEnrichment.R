@@ -27,6 +27,7 @@
 #'
 #' @import ggplot2
 #' @importFrom grDevices hcl.pals
+#' @importFrom stats as.formula
 #'
 #' @examples
 #' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
