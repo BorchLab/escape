@@ -24,11 +24,7 @@
 #' @param add.corr Logical. Add Pearson and Spearman correlation
 #' coefficients (top-left corner of the first facet).
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
-
-#'
-#' @return A \pkg{ggplot2} object.
-#' @export
-#'
+#' 
 #' @examples
 #' gs <- list(
 #'   Bcells = c("MS4A1","CD79B","CD79A","IGH1","IGH2"),
@@ -47,6 +43,10 @@
 #'   add.corr  = TRUE,
 #'   point.size = 1
 #' )
+#'
+#' @return A \pkg{ggplot2} object.
+#' @importFrom stats as.formula
+#' @export
 scatterEnrichment <- function(input.data,
                               assay      = NULL,
                               x.axis,

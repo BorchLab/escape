@@ -25,9 +25,6 @@
 #' to plotting.
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'
-#' @return A \pkg{ggplot2} object.
-#' @export
-#'
 #' @examples
 #' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
@@ -42,6 +39,9 @@
 #'
 #' @import ggplot2
 #' @importFrom ggdist stat_pointinterval
+#' @importFrom stats as.formula
+#' @return A \pkg{ggplot2} object.
+#' @export
 geyserEnrichment <- function(input.data,
                              assay     = NULL,
                              group.by  = NULL,

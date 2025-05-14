@@ -80,4 +80,5 @@ scatterEnrichment(
   add.corr  = TRUE,
   point.size = 1
 )
+
 }

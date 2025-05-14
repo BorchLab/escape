@@ -53,7 +53,7 @@ performNormalization <- function(input.data,
   if (!is.null(assay) && .is_seurat_or_sce(input.data)) {
     if (.is_seurat(input.data)) {
       assay.present <- assay %in% SeuratObject::Assays(input.data)
-    } else if (.is_sce(input.data) || .is_se(input.data)) {
+    } else if (.is_sce(input.data) || .is_sce(input.data)) {
       assay.present <- assay %in% names(SummarizedExperiment::altExps(input.data))
     }
   }

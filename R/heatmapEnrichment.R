@@ -23,6 +23,7 @@
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'
 #' @return A \code{ggplot2} object.
+#' @importFrom stats aggregate dist hclust
 #' @export
 #'
 #' @examples

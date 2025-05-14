@@ -34,6 +34,7 @@
 #'               dimRed = "escape.PCA")
 #'
 #' @return A **ggplot2** object.
+#' @importFrom utils head
 #' @export
 pcaEnrichment <- function(input.data,
                           dimRed = NULL,
