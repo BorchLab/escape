@@ -224,7 +224,7 @@ Although we glossed over the normalization that can be used in ```escape.matrix(
 There can be inherent bias in enrichment values due to drop out in single-cell expression data. Cells with larger numbers of features and counts will likely have higher enrichment values. ```performNormalization()``` will normalize the enrichment values by calculating the number of genes expressed in each gene set and cell. This is similar to the normalization in classic GSEA and it will be stored in a new assay. 
 
 ```{r}
-pbmc_small <- performNormalization(sc.data = pbmc_small, 
+pbmc_small <- performNormalization(input.data = pbmc_small, 
                                    assay = "escape.ssGSEA", 
                                    gene.sets = GS.hallmark)
 ```
@@ -232,7 +232,7 @@ pbmc_small <- performNormalization(sc.data = pbmc_small,
 An alternative for scaling by expressed gene sets would be to use a scaling factor previously calculated during normal single-cell data processing and quality control. This can be done using the **scale.factor** argument and providing a vector. 
 
 ```{r}
-pbmc_small <- performNormalization(sc.data = pbmc_small, 
+pbmc_small <- performNormalization(input.data = pbmc_small, 
                                    assay = "escape.ssGSEA", 
                                    gene.sets = GS.hallmark, 
                                    scale.factor = pbmc_small$nFeature_RNA)
