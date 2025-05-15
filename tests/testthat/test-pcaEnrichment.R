@@ -2,11 +2,11 @@
 
 pbmc_small <- getdata("runEscape", "pbmc_small_ssGSEA")
 
-# PCA (small data → very fast)
+# PCA 
 pbmc_small <- escape::performPCA(pbmc_small, assay = "escape")
 
 # Convenience: pull the raw list returned by .grabDimRed()
-pca_list <- escape:::.grabDimRed(pbmc_small, "escape.PCA")
+pca_list <-escape::performPCA(t(pbmc_small@assays$escape$data))
 
 
 ## -----------------------------------------------------------------
@@ -53,7 +53,7 @@ test_that("faceting works and errors appropriately", {
   # facet.by with raw list → error
   expect_error(
     escape::pcaEnrichment(pca_list, facet.by = "groups"),
-    "input.data' must be a Seurat / SCE object or the list from performPCA().",
+    "facet.by is only valid with a single-cell object.",
     fixed = TRUE
   )
   
@@ -62,7 +62,7 @@ test_that("faceting works and errors appropriately", {
     escape::pcaEnrichment(pbmc_small,
                           dimRed   = "escape.PCA",
                           facet.by = "not_a_col"),
-    "Please select a variable in your meta data to use for facet.by.",
+    "'not_a_col' not found in the single-cell object metadata.",
     fixed = TRUE
   )
 })

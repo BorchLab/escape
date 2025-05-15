@@ -62,14 +62,14 @@ pcaEnrichment <- function(input.data,
     stop("'input.data' must be a Seurat / SCE object or the list from performPCA().")
   }
   
-  # Helper to convert "PC5" → 5 ------------------------------------------------
+  # Helper to convert PCX to X
   pc_idx <- function(pc) as.integer(sub("PC", "", pc, ignore.case = TRUE))
   x.idx <- pc_idx(x.axis)
   y.idx <- pc_idx(y.axis)
   
   # Axis labels with % variance ------------------------------------------------
-  if (add.percent.contribution && length(pca.values) == 4) {
-    pc.var <- pca.values[[3]]
+  if (add.percent.contribution && "contribution" %in% names(pca.values)) {
+    pc.var <- pca.values$contribution
     x.title <- sprintf("%s (%.1f%%)", x.axis, pc.var[x.idx])
     y.title <- sprintf("%s (%.1f%%)", y.axis, pc.var[y.idx])
   } else {
@@ -85,7 +85,7 @@ pcaEnrichment <- function(input.data,
   if (!is.null(facet.by)) {
     meta <- .grabMeta(input.data)
     if (!facet.by %in% colnames(meta))
-      stop("'", facet.by, "' not found in object metadata.")
+      stop("'", facet.by, "' not found in the single-cell object metadata.")
     plot.df[[facet.by]] <- meta[[facet.by]]
   }
   
@@ -121,7 +121,7 @@ pcaEnrichment <- function(input.data,
   # 4. Biplot arrows --------------------------------------------------------
   # ------------------------------------------------------------------------
   if (display.factors) {
-    loadings <- as.data.frame(pca.values[[2]][[3]])
+    loadings <- as.data.frame(pca.values$rotation)
     sel.score <- (loadings[[x.idx]]^2 + loadings[[y.idx]]^2) / 2
     sel <- head(order(sel.score, decreasing = TRUE), number.of.factors)
     loadings <- loadings[sel, ]

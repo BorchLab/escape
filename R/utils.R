@@ -223,10 +223,20 @@
 
 .grabDimRed <- function(sc, dimRed) {
   if (.is_seurat(sc)) {
-    list(PCA = sc[[dimRed]]@cell.embeddings, sc[[dimRed]]@misc)
+    red <- sc[[dimRed]]
+    list(
+      PCA          = red@cell.embeddings,
+      eigen_values = red@misc$eigen_values,
+      contribution = red@misc$contribution,
+      rotation     = red@misc$rotation
+    )
   } else if (.is_sce(sc)) {
-    list(PCA = SingleCellExperiment::reducedDim(sc, dimRed),
-         sc@metadata[c("eigen_values", "contribution", "rotation")])
+    list(
+      PCA          = SingleCellExperiment::reducedDim(sc, dimRed),
+      eigen_values = sc@metadata$eigen_values,
+      contribution = sc@metadata$contribution,
+      rotation     = sc@metadata$rotation
+    )
   }
 }
 
