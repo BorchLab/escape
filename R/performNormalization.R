@@ -25,7 +25,7 @@
 #' Larger values reduce overhead but increase memory usage.  Default **1000**.
 #'
 #' @examples 
-#' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+#' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 #' 
 #' pbmc <- SeuratObject::pbmc_small |>

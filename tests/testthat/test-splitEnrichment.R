@@ -1,4 +1,5 @@
 # test script for splitEnrichment.R - testcases are NOT comprehensive!
+
 ## helper ----------------------------------------------------------------
 geom_names <- function(p) vapply(p$layers, \(x) class(x$geom)[1], character(1))
 
