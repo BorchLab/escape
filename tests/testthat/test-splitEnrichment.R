@@ -28,12 +28,12 @@ test_that("uses dodged violins when split.by has >2 levels", {
   p <- splitEnrichment(
     pbmc_small,
     assay    = "escape",
-    split.by = "groups3",     # 3 levels
+    split.by = "groups3",     
     gene.set = "Tcells"
   )
   
   expect_s3_class(p, "ggplot")
-  expect_true(any(sapply(p$layers, function(layer) inherits(layer$geom, "GeomSplitViolin"))))
+  expect_true(!any(sapply(p$layers, function(layer) inherits(layer$geom, "GeomSplitViolin"))))
 })
 
 # ────────────────────────────────────────────────────────────────────────

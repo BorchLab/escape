@@ -55,49 +55,58 @@ splitEnrichment <- function(input.data,
   if (is.null(split.by)) stop("Please specify a variable for 'split.by'.")
   if (is.null(group.by)) group.by <- "ident"
   
+  # Prepare tidy data with relevant metadata columns
   enriched <- .prepData(input.data, assay, gene.set.use, group.by, split.by, facet.by)
   
+  # Determine the number of levels in the splitting variable
   split.levels <- unique(enriched[[split.by]])
-  n.levels <- length(split.levels)
-  
+  n.levels     <- length(split.levels)
   if (n.levels < 2) stop("split.by must have at least two levels.")
   
+  # Optional Z-score scaling of enrichment values
   if (scale) {
     enriched[[gene.set.use]] <- scale(enriched[[gene.set.use]])
   }
   
+  # Optional reordering of x-axis categories
   if (!is.null(order.by)) {
     enriched <- .orderFunction(enriched, order.by, group.by)
   }
   
+  # Create a composite group for proper boxplot dodging
+  enriched$group_split <- interaction(enriched[[group.by]], enriched[[split.by]], sep = "_")
+  dodge <- position_dodge(width = 0.8)
+  
+  # Base plot
   plot <- ggplot(enriched, aes(x = .data[[group.by]],
                                y = .data[[gene.set.use]],
                                fill = .data[[split.by]])) +
     xlab(group.by) +
-    ylab(paste0(gene.set.use, "\n Enrichment Score")) +
+    ylab(paste0(gene.set.use, "\nEnrichment Score")) +
     labs(fill = split.by) +
     scale_fill_manual(values = .colorizer(palette, n.levels)) +
     theme_classic()
   
-  # Use split violin for binary factors; dodge otherwise
+  # Split violin if binary, otherwise dodge standard violins
   if (n.levels == 2) {
     plot <- plot +
       geom_split_violin(alpha = 0.8, lwd = 0.25)
   } else {
     plot <- plot +
-      geom_violin(position = position_dodge(width = 0.8), alpha = 0.8, lwd = 0.25)
+      geom_violin(position = dodge, alpha = 0.8, lwd = 0.25)
   }
   
-  # Add a central boxplot
+  # Add boxplots with correct alignment using group_split
   plot <- plot +
     geom_boxplot(width = 0.1,
                  fill = "grey",
-                 alpha = 0.5,
+                 alpha = 0.6,
                  outlier.shape = NA,
-                 position = if (n.levels == 2) position_identity() else position_dodge(width = 0.8),
-                 notch = TRUE)
+                 position = if (n.levels == 2) position_identity() else dodge,
+                 notch = FALSE,
+                 aes(group = .data$group_split))
   
-  # Add faceting if specified
+  # Optional faceting
   if (!is.null(facet.by)) {
     plot <- plot + facet_grid(as.formula(paste(". ~", facet.by)))
   }
