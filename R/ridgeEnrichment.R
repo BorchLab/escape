@@ -75,17 +75,25 @@ ridgeEnrichment <- function(input.data,
     is.numeric(df[[color.by]]) && identical(color.by, gene.set.use)
   
   if(gradient.mode) {
-    fill <- ggplot2::after_stat(x)
+    fill <- ggplot2::after_stat(df[,color.by])
   } else {
     fill <- df[,color.by]
   }
   
   ## ---- 2  base ggplot --------------------------------------------------
-  aes_base <- ggplot2::aes(
-    x    = df[,gene.set.use],
-    y    = df[,group.by],
-    fill = fill
-  )
+  aes_base <- if (gradient.mode) {
+    ggplot2::aes(
+      x = .data[[gene.set.use]],
+      y = .data[[group.by]],
+      fill = after_stat(x)
+    )
+  } else {
+    ggplot2::aes(
+      x = .data[[gene.set.use]],
+      y = .data[[group.by]],
+      fill = .data[[color.by]]
+    )
+  }
   
   p <- ggplot2::ggplot(df, aes_base)
   

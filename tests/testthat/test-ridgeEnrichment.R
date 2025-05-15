@@ -9,7 +9,7 @@ test_that("returns a proper ggplot object", {
   p <- ridgeEnrichment(
     pbmc_small,
     assay     = "escape",
-    gene.set  = "Tcells",
+    gene.set.use   = "Tcells",
     group.by  = "groups"
   )
   
@@ -26,31 +26,30 @@ test_that("returns a proper ggplot object", {
 
 # -------------------------------------------------------------------------
 test_that("gradient colour mode when colour.by == gene.set", {
-  p <- ridgeEnrichment(
-    pbmc_small, assay = "escape",
-    gene.set  = "Tcells",
-    color.by  = "Tcells"   # triggers numeric gradient
-  )
+  p <- ridgeEnrichment(pbmc_small, 
+                       assay = "escape",
+                       gene.set.use  = "Tcells",
+                       color.by  = "Tcells")
   # mapping$fill should be after_stat(x)
-  expect_equal(rlang::quo_text(p$mapping$fill), "if (gradient.mode) ggplot2::after_stat(x) else .data[[\"Tcells\"]]")
+  expect_equal(rlang::quo_text(p$mapping$fill), "after_stat(x)")
 })
 
 # -------------------------------------------------------------------------
 test_that("categorical colour mode when colour.by == group", {
   p <- ridgeEnrichment(
     pbmc_small, assay = "escape",
-    gene.set  = "Tcells",
+    gene.set.use  = "Tcells",
     color.by  = "group",        # will internally map to group.by "groups"
     group.by  = "groups"
   )
-  expect_equal(rlang::quo_text(p$mapping$fill), "if (gradient.mode) ggplot2::after_stat(x) else .data[[\"groups\"]]")
+  expect_equal(rlang::quo_text(p$mapping$fill), ".data[[\"groups\"]]")
 })
 
 # -------------------------------------------------------------------------
 test_that("scale = TRUE centres distribution at zero", {
   p <- ridgeEnrichment(
     pbmc_small, assay = "escape",
-    gene.set = "Tcells",
+    gene.set.use = "Tcells",
     scale    = TRUE
   )
   m <- mean(p$data$Tcells, na.rm = TRUE)
@@ -61,7 +60,7 @@ test_that("scale = TRUE centres distribution at zero", {
 test_that("order.by = 'mean' re-orders factor levels by mean score", {
   p <- ridgeEnrichment(
     pbmc_small, assay = "escape",
-    gene.set = "Tcells",
+    gene.set.use = "Tcells",
     group.by = "groups",
     order.by = "mean"
   )
@@ -75,7 +74,7 @@ test_that("order.by = 'mean' re-orders factor levels by mean score", {
 test_that("add.rug = TRUE switches on jittered points", {
   p <- ridgeEnrichment(
     pbmc_small, assay = "escape",
-    gene.set = "Tcells",
+    gene.set.use = "Tcells",
     add.rug  = TRUE
   )
   expect_true(any(vapply(
