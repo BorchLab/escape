@@ -16,7 +16,7 @@ test_that("class helpers recognise Seurat / SCE", {
   # Seurat branch -------------------------------------------------------
   if (requireNamespace("SeuratObject", quietly = TRUE)) {
     seurat_obj <- SeuratObject::CreateSeuratObject(
-      counts = matrix(rpois(20, 1), nrow = 4)
+      counts = Matrix::rsparsematrix(nrow = 4, ncol = 5, density = 0.2) * 10
     )
     expect_true(.is_seurat(seurat_obj))
     expect_false(.is_sce(seurat_obj))
