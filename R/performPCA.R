@@ -75,8 +75,10 @@ performPCA <- function(input.data,
   if (.is_seurat_or_sce(input.data)) {
     
     if (.is_seurat(input.data)) {
-      if (!requireNamespace("SeuratObject", quietly = TRUE))
-        stop("Package 'SeuratObject' is required to write PCA results.")
+      if (!requireNamespace("SeuratObject", quietly = TRUE)) {
+        stop("Package 'SeuratObject' is required to write PCA results into a Seurat object.")
+      }
+      
       input.data[[reduction.name]] <- SeuratObject::CreateDimReducObject(
         embeddings = pca_obj$x,
         loadings   = pca_obj$rotation,
@@ -86,10 +88,15 @@ performPCA <- function(input.data,
         assay      = assay
       )
       
-    } else {  # SingleCellExperiment
+    } else if (.is_sce(input.data)) {
+      if (!requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+        stop("Package 'SingleCellExperiment' is required to write PCA results into a SingleCellExperiment object.")
+      }
+      
       SingleCellExperiment::reducedDim(input.data, reduction.name) <- pca_obj$x
       input.data@metadata <- c(input.data@metadata, misc)
-    }
+      
+    } 
     return(input.data)
     
   } else {

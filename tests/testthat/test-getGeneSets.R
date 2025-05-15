@@ -1,7 +1,8 @@
 # test script for getGeneSets.R - testcases are NOT comprehensive!
 
 test_that("species argument is validated", {
-  expect_error(getGeneSets("Pan troglodytes"), "'arg' should be one of “Homo sapiens”, “Mus musculus”")
+  expect_error(getGeneSets("Pan troglodytes"), 
+               regexp =  "Homo sapiens")
 })
 
 test_that("filtering by library works", {

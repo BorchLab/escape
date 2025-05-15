@@ -50,7 +50,7 @@ positive range and/or applies a natural‑log transform for compatibility with
 log‑based differential tests.
 }
 \examples{
-GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 
 pbmc <- SeuratObject::pbmc_small |>
@@ -59,6 +59,6 @@ pbmc <- SeuratObject::pbmc_small |>
                         
 pbmc <- performNormalization(pbmc, 
                              assay = "escape", 
-                             gene.sets = GS)
+                             gene.sets = gs)
 
 }

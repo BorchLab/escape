@@ -15,7 +15,7 @@ test_that("invalid 'style' argument throws error", {
     scatterEnrichment(pbmc_small,
                       assay = "escape", x.axis = x.gene, y.axis = y.gene,
                       style = "foo"),
-    "'arg' should be one of “point”, “hex”"
+    regexp = "point"
   )
 })
 
@@ -24,7 +24,7 @@ test_that("invalid 'color.by' argument throws error", {
     scatterEnrichment(pbmc_small,
                       assay = "escape", x.axis = x.gene, y.axis = y.gene,
                       color.by = "foobar"),
-    "'arg' should be one of “density”, “group”, “x”, “y”"
+    regexp = "density"
   )
 })
 

@@ -168,8 +168,8 @@ escape.matrix <- function(input.data,
 #' [ridgeEnrichment()] and related plotting helpers for visualization.
 #'
 #' @examples
-#' gs <- list(Hallmark_IFN = c("STAT1","IRF1","IFI44"),
-#'            CellCycle_G2M = c("TOP2A","MKI67","CCNA2"))
+#' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+#'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 #' 
 #' sce <- SeuratObject::pbmc_small
 #' sce <- runEscape(sce, 

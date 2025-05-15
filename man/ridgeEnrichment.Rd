@@ -65,5 +65,5 @@ pbmc <- SeuratObject::pbmc_small |>
 ridgeEnrichment(pbmc, assay = "escape",
                 gene.set.use = "Tcells",
                 group.by = "groups")
-                
+
 }

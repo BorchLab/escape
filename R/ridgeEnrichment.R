@@ -25,9 +25,6 @@
 #' @param add.rug Logical. Draw per-cell tick marks underneath each ridge.
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'
-#' @return A [ggplot2] object.
-#' @export
-#'
 #' @examples
 #' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
@@ -38,6 +35,10 @@
 #' ridgeEnrichment(pbmc, assay = "escape",
 #'                 gene.set.use = "Tcells",
 #'                 group.by = "groups")
+#'
+#' @importFrom stats median
+#' @return A [ggplot2] object.
+#' @export
 #'                 
 ridgeEnrichment <- function(input.data,
                             gene.set.use,

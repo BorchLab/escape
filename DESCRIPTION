@@ -27,9 +27,7 @@ Imports:
     MatrixGenerics,
     msigdb,
     patchwork,             
-    SingleCellExperiment,
     stringr,
-    SummarizedExperiment,
     UCell,
     utils,
     grDevices,
@@ -37,6 +35,9 @@ Imports:
     stats
 Suggests: 
     Seurat,
+    SeuratObject,
+    SummarizedExperiment,
+    SingleCellExperiment,
     dplyr,
     hexbin,
     irlba,

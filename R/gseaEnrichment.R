@@ -14,17 +14,17 @@
 #'
 #' @param input.data  A \link[SeuratObject]{Seurat} object or a
 #' \link[SingleCellExperiment]{SingleCellExperiment}.
-#' @param gene.set.use Character(1).  Name of the gene set to display.
+#' @param gene.set.use Character(1). Name of the gene set to display.
 #' @param gene.sets A named list of character vectors, the result of
 #' [getGeneSets()], or the built-in data object [escape.gene.sets].
 #' @param group.by Metadata column. Defaults to the Seurat/SCE `ident` 
 #' slot when `NULL`.
 #' @param summary.fun Method used to collapse expression within each
-#* group **before** ranking: one of `"mean"` (default), `"median"`, `"max"`,
-#*`"sum"`, or `"geometric"`
-#* @param p Weighting exponent in the KS statistic (classical GSEA uses `p = 1`).
-#* @param nperm Integer ≥ 0. Gene-label permutations per group (default 1000). 
-#* `0` value will skip NES/*p* calculation.
+#' group **before** ranking: one of `"mean"` (default), `"median"`, `"max"`,
+#'`"sum"`, or `"geometric"`.
+#' @param p Weighting exponent in the KS statistic (classical GSEA uses `p = 1`).
+#' @param nperm Integer ≥ 0. Gene-label permutations per group (default 1000). 
+#' `0` value will skip NES/*p* calculation.
 #' @param rug.height Vertical spacing of the hit rug as a fraction of the
 #' y-axis (default `0.02`).
 #' @param digits Number of decimal places displayed for ES in the

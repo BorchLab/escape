@@ -152,21 +152,34 @@
 # -----------------------------------------------------------------------------
 .cntEval <- function(obj, assay = "RNA", type = "counts") {
   if (.is_seurat(obj)) {
-    # use generic accessor to avoid tight coupling to Seurat internals
+    # Use generic accessor if available
     if (requireNamespace("SeuratObject", quietly = TRUE)) {
-      suppressWarnings(cnts <- SeuratObject::GetAssayData(obj, assay = assay, slot = type))
+      suppressWarnings(
+        cnts <- SeuratObject::GetAssayData(obj, assay = assay, slot = type)
+      )
     } else {
-      cnts <- obj@assays[[assay]][type]
+      cnts <- obj@assays[[assay]][[type]]
     }
+    
   } else if (.is_sce(obj)) {
-    pos <- if (assay == "RNA") "counts" else assay
-    cnts <- if (assay == "RNA") SummarizedExperiment::assay(obj, pos)
-    else SummarizedExperiment::assay(SingleCellExperiment::altExp(obj, pos))
+    if (requireNamespace("SummarizedExperiment", quietly = TRUE) &&
+        requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+      pos <- if (assay == "RNA") "counts" else assay
+      
+      cnts <- if (assay == "RNA") {
+        SummarizedExperiment::assay(obj, pos)
+      } else {
+        SummarizedExperiment::assay(SingleCellExperiment::altExp(obj, pos))
+      }
+    } else {
+      stop("SummarizedExperiment and SingleCellExperiment packages are required but not installed.")
+    }
   } else {
     cnts <- obj
   }
   cnts[MatrixGenerics::rowSums2(cnts) != 0, , drop = FALSE]
 }
+
 
 # -----------------------------------------------------------------------------
 #  ATTACH / PULL ENRICHMENT MATRICES ------------------------------------------
@@ -177,22 +190,49 @@
       major <- as.numeric(substr(sc@version, 1, 1))
       fn    <- if (major >= 5) {
         SeuratObject::CreateAssay5Object
-      } else  {
+      } else {
         SeuratObject::CreateAssayObject
       }
-      suppressWarnings(sc[[name]] <- fn(data = as.matrix(t(enrichment))))
+      suppressWarnings(
+        sc[[name]] <- fn(data = as.matrix(t(enrichment)))
+      )
+    } else {
+      warning("SeuratObject package is required to add enrichment to Seurat object.")
     }
+    
   } else if (.is_sce(sc)) {
-    SingleCellExperiment::altExp(sc, name) <- SummarizedExperiment::SummarizedExperiment(assays = list(data = t(enrichment)))
+    if (requireNamespace("SummarizedExperiment", quietly = TRUE) &&
+        requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+      alt <- SummarizedExperiment::SummarizedExperiment(
+        assays = list(data = t(enrichment))
+      )
+      SingleCellExperiment::altExp(sc, name) <- alt
+    } else {
+      warning("SummarizedExperiment and SingleCellExperiment packages are required to add enrichment to SCE object.")
+    }
   }
+  
   sc
 }
 
 .pull.Enrich <- function(sc, name) {
   if (.is_seurat(sc)) {
-    Matrix::t(sc[[name]]["data"])
+    if (requireNamespace("Matrix", quietly = TRUE)) {
+      Matrix::t(sc[[name]][["data"]])
+    } else {
+      stop("Matrix package is required to transpose Seurat assay data.")
+    }
+    
   } else if (.is_sce(sc)) {
-    t(SummarizedExperiment::assay(SingleCellExperiment::altExp(sc)[[name]]))
+    if (requireNamespace("SummarizedExperiment", quietly = TRUE) &&
+        requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+      t(SummarizedExperiment::assay(SingleCellExperiment::altExp(sc)[[name]]))
+    } else {
+      stop("SummarizedExperiment and SingleCellExperiment packages are required to pull enrichment from SCE object.")
+    }
+    
+  } else {
+    stop("Unsupported object type for pulling enrichment.")
   }
 }
 
@@ -209,37 +249,58 @@
 
 .grabMeta <- function(sc) {
   if (.is_seurat(sc)) {
+    if (!requireNamespace("SeuratObject", quietly = TRUE)) {
+      stop("SeuratObject package is required to extract metadata from a Seurat object.")
+    }
     out <- data.frame(sc[[]], ident = SeuratObject::Idents(sc))
   } else if (.is_sce(sc)) {
-    out <- data.frame(SummarizedExperiment::colData(sc))
-    rownames(out) <- SummarizedExperiment::colData(sc)@rownames
-    if ("ident" %!in% colnames(out))
+    if (!requireNamespace("SummarizedExperiment", quietly = TRUE)) {
+      stop("SummarizedExperiment package is required to extract metadata 
+           from a SingleCellExperiment object.")
+    }
+    cd <- SummarizedExperiment::colData(sc)
+    out <- data.frame(cd, stringsAsFactors = FALSE)
+    # Preserve rownames explicitly
+    rownames(out) <- rownames(cd)
+    
+    # Ensure 'ident' column exists
+    if ("ident" %!in% colnames(out)) {
       out$ident <- NA
+    }
   } else {
-    stop("Unsupported object type")
+    stop("Unsupported object type; must be Seurat or SingleCellExperiment.")
   }
-  out
+  return(out)
 }
+
 
 .grabDimRed <- function(sc, dimRed) {
   if (.is_seurat(sc)) {
+    if (!requireNamespace("SeuratObject", quietly = TRUE)) {
+      stop("SeuratObject package is required to access dimensional reduction in Seurat objects.")
+    }
+    
     red <- sc[[dimRed]]
-    list(
+    return(list(
       PCA          = red@cell.embeddings,
       eigen_values = red@misc$eigen_values,
       contribution = red@misc$contribution,
       rotation     = red@misc$rotation
-    )
+    ))
+    
   } else if (.is_sce(sc)) {
-    list(
+    if (!requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+      stop("SingleCellExperiment package is required to access dimensional reduction in SCE objects.")
+    }
+    
+    return(list(
       PCA          = SingleCellExperiment::reducedDim(sc, dimRed),
       eigen_values = sc@metadata$eigen_values,
       contribution = sc@metadata$contribution,
       rotation     = sc@metadata$rotation
-    )
+    ))
   }
 }
-
 # -----------------------------------------------------------------------------
 #  Underlying Enrichment Calculations
 # -----------------------------------------------------------------------------

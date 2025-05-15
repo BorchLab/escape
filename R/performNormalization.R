@@ -34,7 +34,7 @@
 #'                         
 #' pbmc <- performNormalization(pbmc, 
 #'                              assay = "escape", 
-#'                              gene.sets = GS)
+#'                              gene.sets = gs)
 #'
 #' @return If `input.data` is an object, the same object with a new assay
 #'         "<assay>_normalized". Otherwise a matrix of normalized scores.
@@ -47,23 +47,32 @@ performNormalization <- function(input.data,
                                  make.positive   = FALSE,
                                  scale.factor    = NULL,
                                  groups          = NULL) {
-  ## ----------------------------------------------------------------------
+
   ## 1. Retrieve enrichment matrix ---------------------------------------
   assay.present <- FALSE
   if (!is.null(assay) && .is_seurat_or_sce(input.data)) {
     if (.is_seurat(input.data)) {
-      assay.present <- assay %in% SeuratObject::Assays(input.data)
-    } else if (.is_sce(input.data) || .is_sce(input.data)) {
-      assay.present <- assay %in% names(SummarizedExperiment::altExps(input.data))
+      if (requireNamespace("SeuratObject", quietly = TRUE)) {
+        assay.present <- assay %in% SeuratObject::Assays(input.data)
+      } else {
+        warning("SeuratObject package is required but not installed.")
+      }
+    } else if (.is_sce(input.data)) {
+      if (requireNamespace("SummarizedExperiment", quietly = TRUE)) {
+        assay.present <- assay %in% names(SummarizedExperiment::altExps(input.data))
+      } else {
+        warning("SummarizedExperiment package is required but not installed.")
+      }
     }
   }
+  
+
   
   enriched <- if (assay.present) .pull.Enrich(input.data, assay) else enrichment.data
   if (is.null(enriched)) {
     stop("Could not obtain enrichment matrix, please set `assay` or supply `enrichment.data`.")
   }
   
-  ## ----------------------------------------------------------------------
   ## 2. Validate / derive scale factors ----------------------------------
   if (!is.null(scale.factor) && length(scale.factor) != nrow(enriched))
     stop("Length of 'scale.factor' must match number of cells.")
@@ -90,8 +99,7 @@ performNormalization <- function(input.data,
     sf.split  <- .split_vector(scale.factor, chunk.size = if (is.null(groups)) length(scale.factor) else min(groups, length(scale.factor)))
   }
   
-  ## ----------------------------------------------------------------------
-  ## 3. Chunked normalisation --------------------------------------------
+  ## 3. Chunked normalization --------------------------------------------
   message("Normalizing enrichment scores...")
   en.split <- .split_rows(enriched, chunk.size = if (is.null(groups)) nrow(enriched) else min(groups, nrow(enriched)))
   norm.lst <- Map(function(sco, fac) sco / fac, en.split, sf.split)
@@ -110,7 +118,6 @@ performNormalization <- function(input.data,
     normalized[neg]  <- -log1p(abs(normalized[neg]) + 1e-6)
   }
   
-  ## ----------------------------------------------------------------------
   ## 6. Return ------------------------------------------------------------
   if (.is_seurat_or_sce(input.data)) {
     .adding.Enrich(input.data, normalized, paste0(assay %||% "escape", "_normalized"))
