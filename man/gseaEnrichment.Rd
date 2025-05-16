@@ -14,7 +14,7 @@ gseaEnrichment(
   nperm = 1000,
   rug.height = 0.02,
   digits = 2,
-  BPPARAM = BiocParallel::SerialParam(),
+  BPPARAM = NULL,
   palette = "inferno"
 )
 }
@@ -46,8 +46,7 @@ y-axis (default `0.02`).}
 legend (default `2`).}
 
 \item{BPPARAM}{A \pkg{BiocParallel} parameter object describing the
-parallel backend. Default is `BiocParallel::SerialParam()` (serial
-execution).}
+parallel backend.}
 
 \item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }

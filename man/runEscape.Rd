@@ -15,7 +15,7 @@ runEscape(
   new.assay.name = "escape",
   min.expr.cells = 0,
   min.filter.by = NULL,
-  BPPARAM = BiocParallel::SerialParam(),
+  BPPARAM = NULL,
   ...
 )
 }
@@ -58,8 +58,7 @@ details above). Default **0** (no gene filtering).}
 `min.expr.cells` rule is applied.  Default **`NULL`**.}
 
 \item{BPPARAM}{A \pkg{BiocParallel} parameter object describing the
-parallel backend. Default is `BiocParallel::SerialParam()` (serial
-execution).}
+parallel backend.}
 
 \item{...}{Extra arguments passed verbatim to the chosen back-end
 scoring function (`gsva()`, `ScoreSignatures_UCell()`, or

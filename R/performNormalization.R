@@ -15,8 +15,8 @@
 #' @param assay Name of the assay holding enrichment scores when
 #' `input.data` is a single‑cell object. Ignored otherwise.
 #' @param gene.sets A named list of character vectors, the result of
-#' [getGeneSets()], or the built-in data object
-#' [escape.gene.sets].  List names become column names in the result.
+#' [getGeneSets()], or the built-in data object [escape.gene.sets]. 
+#' List names become column names in the result.
 #' @param make.positive Logical; if `TRUE` shifts each column so its minimum is
 #' zero.
 #' @param scale.factor Optional numeric vector overriding gene‑count scaling

@@ -27,8 +27,8 @@ object previously processed by \code{\link{runEscape}}.}
 `input.data` is a single‑cell object. Ignored otherwise.}
 
 \item{gene.sets}{A named list of character vectors, the result of
-[getGeneSets()], or the built-in data object
-[escape.gene.sets].  List names become column names in the result.}
+[getGeneSets()], or the built-in data object [escape.gene.sets]. 
+List names become column names in the result.}
 
 \item{make.positive}{Logical; if `TRUE` shifts each column so its minimum is
 zero.}
