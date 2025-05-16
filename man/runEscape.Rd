@@ -86,7 +86,6 @@ sce <- runEscape(sce,
                  method = "GSVA",
                  groups = 1000, 
                  min.size = 3,
-                 normalize = TRUE,
                  new.assay.name = "escape")
 
 }

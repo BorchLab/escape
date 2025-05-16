@@ -58,10 +58,10 @@ performNormalization <- function(input.data,
         warning("SeuratObject package is required but not installed.")
       }
     } else if (.is_sce(input.data)) {
-      if (requireNamespace("SummarizedExperiment", quietly = TRUE)) {
-        assay.present <- assay %in% names(SummarizedExperiment::altExps(input.data))
+      if (requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+        assay.present <- assay %in% names(SingleCellExperiment::altExps(input.data))
       } else {
-        warning("SummarizedExperiment package is required but not installed.")
+        warning("SingleCellExperiment package is required but not installed.")
       }
     }
   }

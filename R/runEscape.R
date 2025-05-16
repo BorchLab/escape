@@ -139,6 +139,9 @@ escape.matrix <- function(input.data,
       make.positive   = make.positive,
       groups          = groups
     )
+    if (.is_seurat_or_sce(input.data)) {
+      res_mat <- .pull.Enrich(res_mat, "escape_normalized")
+    }
   }
   
   res_mat
@@ -176,7 +179,6 @@ escape.matrix <- function(input.data,
 #'                  method = "GSVA",
 #'                  groups = 1000, 
 #'                  min.size = 3,
-#'                  normalize = TRUE,
 #'                  new.assay.name = "escape")
 #'
 #' @export
