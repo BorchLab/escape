@@ -30,7 +30,6 @@
 #' @export
 #'
 #' @import ggplot2
-#' @import patchwork
 #' @importFrom stats na.omit
 #' @importFrom MatrixGenerics rowMeans2
 densityEnrichment <- function(input.data,
@@ -122,5 +121,5 @@ densityEnrichment <- function(input.data,
           axis.ticks.y = element_blank(),
           panel.border = element_rect(fill = NA, colour = "black"))
   
-  p1 / p2 + patchwork::plot_layout(heights = c(3, 1))
+  patchwork::wrap_plots(p1, p2, ncol = 1, heights = c(3,1))
 }
