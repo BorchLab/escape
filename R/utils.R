@@ -218,7 +218,7 @@
 .pull.Enrich <- function(sc, name) {
   if (.is_seurat(sc)) {
     if (requireNamespace("Matrix", quietly = TRUE)) {
-      Matrix::t(sc[[name]][["data"]])
+      Matrix::t(sc[[name]]["data"])
     } else {
       stop("Matrix package is required to transpose Seurat assay data.")
     }
@@ -325,6 +325,12 @@
 
 #─ Perform enrichment on one cell chunk ---------------------------------------
 .compute_enrichment <- function(expr, gene_sets, method, BPPARAM, ...) {
+  if (requireNamespace("BiocParallel", quietly = TRUE)) {
+    if (is.null(BPPARAM) || !inherits(BPPARAM, "BiocParallelParam")) {
+      BPPARAM <- BiocParallel::SerialParam()   # safe default everywhere
+    }
+  }
+  
   switch(toupper(method),
          "GSVA" = {
            param <- .build_gsva_param(expr, gene_sets, "GSVA")
@@ -411,6 +417,18 @@
   if(is.null(rownames(expr)))
     stop("The input assay object doesn't have rownames\n")
   expr
+}
+
+# Parallel-aware lapply
+.plapply <- function(X, FUN, ..., BPPARAM = NULL, parallel = TRUE) {
+  if (parallel && requireNamespace("BiocParallel", quietly = TRUE)) {
+    if (is.null(BPPARAM)) {            
+      BPPARAM <- BiocParallel::SerialParam()
+    }
+    BiocParallel::bplapply(X, FUN, ..., BPPARAM = BPPARAM)
+  } else {
+    lapply(X, FUN, ...)
+  }
 }
 
 utils::globalVariables(c(

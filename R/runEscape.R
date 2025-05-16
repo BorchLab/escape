@@ -42,8 +42,7 @@
 #' (Seurat) or `colData` (SCE) defining groups within which the
 #' `min.expr.cells` rule is applied.  Default **`NULL`**.
 #' @param BPPARAM A \pkg{BiocParallel} parameter object describing the
-#' parallel backend. Default is `BiocParallel::SerialParam()` (serial
-#' execution).
+#' parallel backend. 
 #' @param ... Extra arguments passed verbatim to the chosen back-end
 #' scoring function (`gsva()`, `ScoreSignatures_UCell()`, or
 #' `AUCell_calcAUC()`).
@@ -68,7 +67,6 @@
 #'                       groups = 500, 
 #'                       min.size = 3)
 #'
-#' @importFrom BiocParallel SerialParam bplapply
 #' @export
 escape.matrix <- function(input.data,
                           gene.sets        = NULL,
@@ -79,7 +77,7 @@ escape.matrix <- function(input.data,
                           make.positive    = FALSE,
                           min.expr.cells   = 0,
                           min.filter.by    = NULL,
-                          BPPARAM          = SerialParam(),
+                          BPPARAM          = NULL,
                           ...) {
   if(is.null(min.size)) min.size <- 0
   
@@ -114,10 +112,11 @@ escape.matrix <- function(input.data,
   message("escape.matrix(): processing ", length(chunks), " chunk(s)...")
   
   # ---- 4) compute enrichment in parallel ------------------------------------
-  res_list <- BiocParallel::bplapply(
+  res_list <- .plapply(
     chunks,
-    function(mat) .compute_enrichment(mat, egc, method, BPPARAM), #, ...),
-    BPPARAM = BPPARAM
+    function(mat)
+      .compute_enrichment(mat, egc, method, BPPARAM, ...),
+    BPPARAM  = BPPARAM
   )
   
   # ---- 5) combine + orient (rows = cells) -----------------------------------
@@ -180,7 +179,6 @@ escape.matrix <- function(input.data,
 #'                  normalize = TRUE,
 #'                  new.assay.name = "escape")
 #'
-#' @importFrom BiocParallel SerialParam
 #' @export
 runEscape <- function(input.data,
                       gene.sets,
@@ -192,7 +190,7 @@ runEscape <- function(input.data,
                       new.assay.name = "escape",
                       min.expr.cells   = 0,
                       min.filter.by    = NULL,
-                      BPPARAM = BiocParallel::SerialParam(),
+                      BPPARAM = NULL,
                       ...) {
     method <- match.arg(method)
     .checkSingleObject(input.data)
@@ -220,7 +218,7 @@ runEscape <- function(input.data,
   m[keep, , drop = FALSE]
 }
 
-# helper: pull a column from meta.data / colData no matter the object ---------
+# helper: pull a column from meta.data / colData no matter the object
 #' @importFrom SummarizedExperiment colData
 .extract_group_vector <- function(obj, col) {
   if (.is_seurat(obj))

@@ -30,8 +30,7 @@
 #' @param digits Number of decimal places displayed for ES in the
 #' legend (default `2`).
 #' @param BPPARAM A \pkg{BiocParallel} parameter object describing the
-#' parallel backend. Default is `BiocParallel::SerialParam()` (serial
-#' execution).
+#' parallel backend. 
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'  
 #' @examples
@@ -60,7 +59,7 @@ gseaEnrichment <- function(input.data,
                            nperm       = 1000,
                            rug.height  = 0.02,
                            digits      = 2,
-                           BPPARAM     = BiocParallel::SerialParam(),
+                           BPPARAM     = NULL,
                            palette     = "inferno") {
   
   ## ---- 0.  Checks ----------------------------------------------------------
@@ -126,7 +125,7 @@ gseaEnrichment <- function(input.data,
     
     ## ---- permutation null --------------------------------------------------
     if (nperm > 0) {
-      nullES <- BiocParallel::bplapply(
+      nullES <- .plapply(
         seq_len(nperm),
         function(xx) {
           hits   <- sample.int(n.genes, length(gs.genes))
@@ -134,7 +133,8 @@ gseaEnrichment <- function(input.data,
           cur    <- .computeRunningES(names(rvec), names(rvec)[hits], weight)
           ifelse(max(abs(cur)) == abs(max(cur)), max(cur), min(cur))
         },
-        BPPARAM = BPPARAM
+        BPPARAM  = BPPARAM,   # will be ignored in serial mode
+        parallel = TRUE       # set FALSE to force serial execution
       )
       nullES <- unlist(nullES, use.names = FALSE)
       
