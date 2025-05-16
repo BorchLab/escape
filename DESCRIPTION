@@ -13,42 +13,39 @@ LazyData: false
 RoxygenNote: 7.3.2
 biocViews: Software, SingleCell, Classification, Annotation, GeneSetEnrichment, Sequencing, GeneSignaling, Pathways
 Depends: R (>= 4.1)
-Imports: 
-    AUCell,
-    BiocParallel,
+Imports:
     ggdist,
-    ggplot2,
-    ggpointdensity,
-    GSEABase,
-    GSVA,
-    ggridges,
-    grid,               
+    ggplot2 (>= 3.5.0),
+    grDevices,
     Matrix,
     MatrixGenerics,
-    msigdb,
-    patchwork,             
-    stringr,
-    UCell,
-    utils,
-    grDevices,
     methods,
-    stats
-Suggests: 
-    Seurat,
-    SeuratObject,
+    stats,
     SummarizedExperiment,
-    SingleCellExperiment,
+    utils
+Suggests:
+    AUCell,
+    BiocParallel,
+    BiocStyle,
     dplyr,
+    GSEABase,
+    ggridges,
+    ggpointdensity,
+    GSVA,
     hexbin,
     irlba,
-    scran,
     knitr,
+    msigdb,
+    patchwork,
     rmarkdown,
     rlang,
-    markdown,
-    BiocStyle,
-    RColorBrewer,
+    scran,
+    SeuratObject,
+    Seurat,
+    SingleCellExperiment,
     spelling,
-    testthat (>= 3.0.0)
+    stringr,
+    testthat (>= 3.0.0),
+    UCell
 VignetteBuilder: knitr
 Language: en-US
