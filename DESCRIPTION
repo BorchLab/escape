@@ -49,3 +49,4 @@ Suggests:
     UCell
 VignetteBuilder: knitr
 Language: en-US
+BugReports: https://github.com/BorchLab/escape/issues
