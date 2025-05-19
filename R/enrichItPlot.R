@@ -117,7 +117,7 @@ enrichItPlot <- function(res,
     }))
     
     g <- igraph::graph_from_data_frame(edges, directed = FALSE)
-    V(g)$type <- ifelse(V(g)$name %in% res$pathway, "pathway", "gene")
+    igraph::V(g)$type <- ifelse(V(g)$name %in% res$pathway, "pathway", "gene")
     V(g)$size <- ifelse(V(g)$type == "pathway", 8, 3)
     
     ggraph::ggraph(g, layout = "fr") +

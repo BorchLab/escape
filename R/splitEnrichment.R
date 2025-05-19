@@ -90,21 +90,26 @@ splitEnrichment <- function(input.data,
   # Split violin if binary, otherwise dodge standard violins
   if (n.levels == 2) {
     plot <- plot +
-      geom_split_violin(alpha = 0.8, lwd = 0.25)
+      geom_split_violin(alpha = 0.8, lwd = 0.25)  +
+      geom_boxplot(width = 0.1,
+                   fill = "grey",
+                   alpha = 0.6,
+                   outlier.shape = NA,
+                   position = position_identity(),
+                   notch = FALSE)
   } else {
     plot <- plot +
-      geom_violin(position = dodge, alpha = 0.8, lwd = 0.25)
+      geom_violin(position = dodge, alpha = 0.8, lwd = 0.25) +
+      geom_boxplot(width = 0.1,
+                   fill = "grey",
+                   alpha = 0.6,
+                   outlier.shape = NA,
+                   position = dodge,
+                   notch = FALSE,
+                   aes(group = .data$group_split))
   }
   
-  # Add boxplots with correct alignment using group_split
-  plot <- plot +
-    geom_boxplot(width = 0.1,
-                 fill = "grey",
-                 alpha = 0.6,
-                 outlier.shape = NA,
-                 position = if (n.levels == 2) position_identity() else dodge,
-                 notch = FALSE,
-                 aes(group = .data$group_split))
+
   
   # Optional faceting
   if (!is.null(facet.by)) {

@@ -3,7 +3,7 @@
 #' @description
 #' A convenience front-end to **fgsea** that lets you point at the
 #' `avg_log2FC` and `p_val_adj` columns coming out of Seurat / DESeq2 /
-#' edgeR etc.  It converts them to a signed -log10(*p*) ranking, filters on
+#' edgeR etc. It converts them to a signed -log10(*p*) ranking, filters on
 #' significance / effect size, and then runs fgsea.
 #'
 #' @param input.data Either  

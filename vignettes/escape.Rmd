@@ -1,5 +1,5 @@
 ---
-title: Using escape to perform gene set enrichment analyses on single-cell RNA-seq data
+title: Gene-set enrichment on single-cell data with **escape**
 author: 
 - name: Nick Borcherding
   email: ncborch@gmail.com
@@ -25,9 +25,28 @@ knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE)
 library(BiocStyle)
 ```
 
-# Loading Processed Single-Cell Data
+# Overview
 
-For the demonstration of *escape*, we will use the example **"pbmc_small"** data from *Seurat* and also generate a `SingleCellExperiment` object from it.
+escape turns raw single-cell counts into intuitive, per-cell gene-set scores with a single command and then provides plotting helpers to interrogate them.
+The core workflow is:
+
+1. Choose gene-set library (```getGeneSets()``` or your own list)
+2. Score cells (```runEscape()```)
+3. (Optional) Normalize for drop-out (```performNormalization()```)
+4. Explore with the built-in visualization gallery
+
+# Installation 
+
+```{r eval=FALSE}
+devtools::install_github("BorchLab/escape")
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("escape")
+```
+
+Load escape alongside a single-cell container (Seurat or SingleCellExperiment) and a plotting backend:
 
 ```{r}
 suppressPackageStartupMessages({
@@ -37,15 +56,20 @@ suppressPackageStartupMessages({
   )
   invisible(lapply(pkgs, library, character.only = TRUE))
 })
+```
 
+# Loading Processed Single-Cell Data
 
+For the demonstration of *escape*, we will use the example **"pbmc_small"** data from *Seurat* and also generate a `SingleCellExperiment` object from it.
+
+```{r}
 pbmc_small <- get("pbmc_small")
 sce.pbmc <- as.SingleCellExperiment(pbmc_small, assay = "RNA")
 ```
 
 # Getting Gene Sets
 
-## Option 1: Molecular Signature Database
+## Option 1: MSigDB via ```getGeneSets()```
 
 Gene set enrichment analysis begins by identifying the appropriate gene sets for your study. The ```getGeneSets()``` function simplifies this process by extracting one or more gene set libraries from the Molecular Signature Database (MSigDB) and returning them as a GSEABase GeneSetCollection object. Note that the first time you run ```getGeneSets()```, it downloads a complete local copy of the gene sets, which may take a little while. Future calls will use the cached version, greatly improving performance.
 
@@ -59,12 +83,6 @@ In addition, the function supports further subsetting through these parameters:
 
 * **subcategory**: Narrow down your selection by specifying subcategories within a library. Examples include "CGN", "CGP", "CP:BIOCARTA", "CP:KEGG", "GO:BP", "IMMUNESIGDB", etc.
 * **gene.sets:** Isolate individual pathways or gene sets by providing their specific names.
-
-If your data comes from a species other than Homo sapiens, be sure to use the species parameter (e.g., "Mus musculus") to ensure the correct gene nomenclature is applied.
-
-```{r}
-GS.hallmark <- getGeneSets(library = "H")
-```
 
 ## Option 2: Built-In gene sets
 
@@ -372,23 +390,56 @@ splitEnrichment(pbmc_small,
                 split.by = "groups")
 ```
 
+If selecting a **split.by** variable with more than 2 levels, ```splitEnrichment()``` will convert the violin plots to dodge.
+
+```{r}
+splitEnrichment(pbmc_small, 
+                assay = "escape.ssGSEA",
+                gene.set = "HALLMARK-IL2-STAT5-SIGNALING", 
+                split.by = "ident", 
+                group.by = "groups")
+```
+## gseaEnrichment
+
+```gseaEnrichment()``` reproduces the two-panel GSEA graphic from Subramanian et al. (2005):
+* Panel A – the running enrichment score (RES) as you “walk” down the ranked list.
+* Panel B – a rug showing exact positions of each pathway gene.
+
+It works on escape’s per-cell ranks, but collapses them across cells with a summary statistic (summary.fun = "median" by default).
+
+**How it works:** 
+
+1. Rank all genes in each group by summary.fun of expression/statistic.
+2. Perform the weighted Kolmogorov–Smirnov walk: +w when the next gene is in 
+the set, −1/(N − NG) otherwise.
+3. ES = maximum signed deviation; permutation on gene labels (or phenotypes) 
+to derive NES and p.
+
+```{r}
+gseaEnrichment(pbmc_small,
+               gene.set.use = "HALLMARK_INTERFERON_GAMMA_RESPONSE",
+               gene.sets    = GS.hallmark,
+               group.by     = "ident",
+               summary.fun  = "median",
+               nperm        = 1000)
+```
+
 ## densityEnrichment
 
-```densityEnrichment()``` is a method to visualize the mean rank position of the gene set features along the total feature space by group. This is similar to traditional GSEA analysis, but is not calculating the walk-based enrichment score.
+```densityEnrichment()``` is a method to visualize the mean rank position of the gene set features along the total feature space by group. Instead of the classic GSEA running-score, it overlays **kernel-density traces** of the *gene ranks* (1 = most highly expressed/ranked gene) for every group or cluster. High densities at the *left-hand* side mean the pathway is collectively **up-regulated**; peaks on the *right* imply down-regulation.
 
-**gene.set.use** 
+**Anatomy of the plot**
 
-* The selected gene set to visualize
-
-**gene.sets**
-
-* The gene set library from either of the 3 options in the first section of the vignette.
+1. **X-axis** – gene rank (1 … *N*). Left = top-ranked genes.  
+2. **Y-axis** – density estimate (area under each curve = 1).  
+3. **One coloured line per level of `group.by`** – default is Seurat/SCE cluster.  
 
 ```{r tidy=FALSE, eval=FALSE}
 densityEnrichment(pbmc_small, 
                   gene.set.use = "HALLMARK-IL6-JAK-STAT3-SIGNALING", 
                   gene.sets = GS.hallmark)
 ```
+
 
 ## scatterEnrichment
 
@@ -450,6 +501,71 @@ pcaEnrichment(pbmc_small,
               add.percent.contribution = TRUE,
               display.factors = TRUE,
               number.of.factors = 10)
+```
+
+## Precomputed Rank Lists
+
+Functional enrichment is not limited to per-cell scores. Many workflows start with **differential-expression (DE) statistics** (e.g.\ Seurat’s `FindMarkers()`, 
+DESeq2’s `results()`, edgeR’s `topTags()`). Those produce a *ranked gene list* 
+that can be fed into a classical **Gene-Set Enrichment Analysis (GSEA)**.
+
+### Why do this?
+
+* **Aggregates signal across genes**: a borderline but *consistent* trend across 
+30 pathway genes is often more informative than a single high-logFC gene.  
+* **Directionality**: by combining log-fold-change (*effect size*) and an 
+adjusted *p*-value (*confidence*)
+* **Speed**: you avoid re-scoring every cell; only one numeric vector is needed.
+
+`enrichIt()` accepts either  
+
+1. a **named numeric vector** (*already ranked*), or  
+2. a **data frame** containing logFC + *p* (or *adj.p*).
+
+The helper **automatically chooses** the best *p*-value column in this order:
+
+1. `p_val_adj`  
+2. `padj` (DESeq2)  
+3. `FDR` (edgeR)  
+4. plain `p_val`
+
+### Example ```enrichIt()``` workflow
+
+```{r}
+DEG.markers <- FindMarkers(pbmc_small, 
+                           ident.1 = "0", 
+                           ident.2 = "1")
+
+GSEA.results <- enrichIt(input.data = DEG.markers, 
+                         gene.sets = GS.hallmark, 
+                         ranking_fun = "signed_log10_p",      
+                         pval_cutoff = 0.05,                  
+                         logFC_cutoff = 0.25)                  
+
+head(GSEA.results)
+```
+
+What does the result look like?
+
+* **ES / NES** – raw and normalised enrichment scores from fgsea
+* **pval / padj** – nominal and multiple-testing-corrected p
+* **size** – total number of genes in the set
+* **geneRatio** – (core hits)/(size), useful for dot plots
+* **leadingEdge** – semi-colon-separated genes driving the signal
+
+### Visualising the enrichment table
+
+The companion ```enrichItPlot()``` gives three quick chart types.
+
+```{r}
+## (1) Bar plot –20 most significant per database
+enrichItPlot(GSEA.results)               
+
+## (2) Dot plot – coloured by –log10 padj, sized by core-hits
+enrichItPlot(GSEA.results, "dot", top = 10) 
+
+## (3) C-net plot – network of pathways ↔ leading-edge genes
+enrichItPlot(GSEA.results, "cnet", top = 5) 
 ```
 
 ## Differential Enrichment

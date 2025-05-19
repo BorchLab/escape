@@ -176,6 +176,7 @@ gseaEnrichment <- function(input.data,
   
   p_top <- ggplot2::ggplot(running.df, ggplot2::aes(rank, ES, colour = grp)) +
     ggplot2::geom_step(linewidth = 0.8) +
+    ggplot2::geom_hline(yintercept = 0) + 
     ggplot2::scale_colour_manual(values = cols, name = NULL) +
     ggplot2::labs(y = "Running Enrichment Score") +
     ggplot2::theme_classic() +
