@@ -9,12 +9,12 @@
 #' @param input.data Either  
 #'   • a named numeric vector **already ranked**, *or*  
 #'   • a data.frame/tibble with one row per gene and columns containing
-#'     log-fold-change and *p*-value.  
-#'     If the gene ID is not in `rownames(data)`, supply `gene_col`.
+#'     log-fold-change and *p*-value. If the gene ID is not in `rownames(data)`,
+#'     supply `gene_col`.
 #' @param gene.sets AA named list of character vectors, the result of
 #' [getGeneSets()], or the built-in data object [escape.gene.sets].
 #' @param logFC_col,pval_col Column names for logFC and *p* (or adj.*p*)
-#'   – defaults match Seurat’s `FindMarkers()`.
+#' – defaults match Seurat’s `FindMarkers()`.
 #' @param minSize,maxSize Integer. Minimum / maximum pathway size passed to
 #' *fgsea* (default 5 / 500).
 #' @param ranking_fun How to build the ranking: `"signed_log10_p"` (default) 
