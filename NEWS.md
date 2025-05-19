@@ -1,41 +1,69 @@
-# escape VERSION 2.4.1
+## 2.5.0  (2025-05-19)
 
-Version bump to be consistent with Bioconductor release
+### ✨ Highlights
+* **Streamlined code-base** – major internal refactor for clarity, speed and a ~20 % smaller dependency tree.
+* **Consistent, flexible visualisation API** across all plotting helpers.
+* **Robust unit-test suite** (>250 expectations) now ships with the package.
 
-## UNDERLYING CHANGES
+### 🚀 New & enhanced functionality
+| Area | Function(s) | What changed |
+|------|-------------|--------------|
+| **Visualisation** | `ridgeEnrichment()` | *True gradient* coloring mode for numeric `color.by`; optional per-cell rugs; quantile median line; fixed grey-fill bug |
+| | `densityEnrichment()` | accepts new `rug.height`; ~4× faster ranking routine using `MatrixGenerics::rowMeans2`; cleaner two-panel layout via **patchwork** |
+| | `gseaEnrichment()` | new `rug.height`; clearer legend showing ES/NES/ *p*; internal vectorised ES calculation |
+| | `splitEnrichment()` | rewritten: split violins when `split.by` has 2 levels, dodged violins otherwise; inline boxplots; auto Z-scaling; palette helper |
+| | `scatterEnrichment()` | density-aware points (via **ggpointdensity**), hex-bin alternative, optional Pearson/Spearman overlay, continuous or discrete colour mapping |
+| **Dimensionality reduction** | `performPCA()` / `pcaEnrichment()` | uses `irlba::prcomp_irlba()` automatically for large matrices; stores eigen-values/contribution in `misc`; `add.percent.contribution` now always respected |
+| **Scoring backend** | `escape.matrix()` / `.compute_enrichment()` | lazy loading of heavy back-ends (*GSVA*, *UCell*, *AUCell*); unified `.build_gsva_param()`; drops empty gene-sets up-front |
+| **Normalization** | `performNormalization()` | chunk-wise expressed-gene scaling (memory-friendly); accepts external `scale.factor`; optional signed log-transform; returns object with assay `<assay>_normalized` |
+| **Gene-set retrieval** | `getGeneSets()` | downloads now cached under `tools::R_user_dir("escape", "cache")`; graceful KEGG append; clearer error for non-human/mouse requests |
 
-* Automatically remove gene sets with 0 in ```escape.matrix()```
+### 📈 Performance & dependency reductions
+* Replaced *plyr*, *stringr*, *rlang* usage with base-R helpers; these packages 
+are now **Suggests** only.
+* Common color and label utilities (`.colorizer()`, `.colorby()`, `.orderFunction()`) 
+removed redundant tidyverse imports.
+* Internal matrices split/chunked with new `.split_*` helpers to cap memory 
+during parallel scoring/normalization.
 
-# escape VERSION 2.2.4
+### 🐞 Bug fixes
+* Gradient mode in `ridgeEnrichment()` no longer produces grey fills when the 
+chosen gene-set is mapped to `color.by`.
+* `pcaEnrichment()` axis labels correctly include variance contribution 
+when `display.factors = FALSE`.
+* `.grabDimRed()` handles both Seurat v5 and <v5 slot structures; fixes missing 
+eigen-values for SCE objects.
+* `escape.matrix()` respects `min.size = NULL` (no filtering) and handles 
+zero-overlap gene-sets gracefully.
+* Global variable declarations consolidated – eliminates *R CMD check* NOTES 
+regarding `na.omit`, `value`, etc.
 
-## UNDERLYING CHANGES
+### Documentation 
+* DESCRIPTION rewritten – heavy packages moved to *Suggests*; added explicit 
+`Config/reticulate` for BiocParallel.
+* `escape.gene.sets` data object now fully documented with source, usage, and reference.
 
-* moved dependency from msigdbr to msigdb
-* ```getGeneSets()``` now locally caches the gene sets to improve speed of repeated use
-* ```getGeneSets()``` now only supports Mouse or Human
+## 2.4.1  (2025-03-05)
+* Version bump to align with Bioconductor release cycle.
+* **escape.matrix()** now silently removes gene-sets with zero detected features.
 
-# escape VERSION 2.2.3
+## 2.2.4  (2025-01-13)
+### Underlying changes
+* Switched MSigDB dependency from **msigdbr** ➜ **msigdb**.
+* `getGeneSets()` gains local caching; supports only *Homo sapiens* / *Mus musculus*.
 
-## UNDERLYING CHANGES
+## 2.2.3  (2024-12-15)
+* Fixed `groups` parameter handling and data splitting in `escape.matrix()`.
+* Improved efficiency of internal `.split_data.matrix()`.
 
-* fixed handling of *groups* parameter and data splitting in ```escape.matrix()```
-* improved efficiency of internal ```.split_data.matrix()```
+## 2.2.2  (2024-11-30)
+* Patched `performNormalization()` conditional logic and per-gene-set rescaling.
 
-# escape VERSION 2.2.2
+## 2.2.1  (2024-11-18)
+* Version bump for Bioconductor.
 
-## UNDERLYING CHANGES
-
-* fix ```performNormalization()``` conditional statements
-* fix ```performNormalization()``` rescaling for per gene set calculations
-
-# escape VERSION 2.2.1
-
-#VERSION BUMP FOR BIOCONDUCTOR
-
-# escape VERSION 2.1.5 (2024-10-23)
-
-* update handling of v5 Seurat versus <v5 Seurat Objects
-* added mean and median visualization for ```heatmapEnrichment()```
+## 2.1.5  (2024-10-23)
+* Seurat v5 compatibility; mean/median options for `heatmapEnrichment()`.
 
 # escape VERSION 2.1.4 (2024-09-13)
 
