@@ -1,4 +1,4 @@
-# test script for fgseaEscape.R - testcases are NOT comprehensive!
+# test script for enrichIt.R - testcases are NOT comprehensive!
 
 # ---- test fixtures ---------------------------------------------------------
 gene_sets <- list(
@@ -22,7 +22,7 @@ rownames(de_tbl) <- de_tbl$gene          # default layout
 
 # ---- 1.  BASIC FUNCTIONALITY ----------------------------------------------
 test_that("numeric vector input returns a proper fgsea table", {
-  res <- fgseaEscape(vec, gene_sets)
+  res <- enrichIt(vec, gene_sets)
   
   expect_s3_class(res, "data.frame")
   expect_true(all(c("pathway", "NES", "pval", "padj", "leadingEdge") %in%
@@ -32,7 +32,7 @@ test_that("numeric vector input returns a proper fgsea table", {
 })
 
 test_that("data-frame input (default columns) works", {
-  res <- fgseaEscape(de_tbl, gene_sets)
+  res <- enrichIt(de_tbl, gene_sets)
   
   expect_s3_class(res, "data.frame")
   expect_true(all(c("pathway", "NES", "pval") %in% names(res)))
@@ -42,7 +42,7 @@ test_that("data-frame input (default columns) works", {
 test_that("custom gene_col + explicit ranking_fun = 'logFC' works", {
   tbl <- de_tbl
   names(tbl)[names(tbl) == "avg_log2FC"] <- "logFC"
-  res <- fgseaEscape(tbl,
+  res <- enrichIt(tbl,
                      gene.sets   = gene_sets,
                      gene_col    = "gene",
                      logFC_col   = "logFC",
@@ -55,7 +55,7 @@ test_that("custom gene_col + explicit ranking_fun = 'logFC' works", {
 # ---- 3.  ERROR HANDLING ----------------------------------------------------
 test_that("error when no genes left after filtering", {
   expect_error(
-    fgseaEscape(de_tbl,
+    enrichIt(de_tbl,
                 gene_sets,
                 pval_cutoff  = 1e-10,
                 logFC_cutoff = 10),
@@ -66,7 +66,7 @@ test_that("error when no genes left after filtering", {
 test_that("error for unlabeled numeric vector", {
   bad_vec <- unname(vec)
   expect_error(
-    fgseaEscape(bad_vec, gene_sets),
+    enrichIt(bad_vec, gene_sets),
     "named numeric vector"
   )
 })
@@ -75,7 +75,7 @@ test_that("error when required columns are missing", {
   tmp <- de_tbl
   tmp$avg_log2FC <- NULL
   expect_error(
-    fgseaEscape(tmp, gene_sets),
+    enrichIt(tmp, gene_sets),
     "logFC_col"
   )
 })

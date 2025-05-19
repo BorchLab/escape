@@ -38,24 +38,24 @@
 #' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
 #'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 #'                
-#' gsea <- fgseaEscape(markers, 
-#'                     gene.sets = gs)
+#' gsea <- enrichIt(markers, 
+#'                  gene.sets = gs)
 #' 
 #' @return `data.frame` with the usual fgsea columns plus a convenient
 #' `leadingEdge` character column collapsed with \";\".
 #' @export
-fgseaEscape <- function(input.data,
-                        gene.sets,
-                        gene_col       = NULL,
-                        logFC_col      = "avg_log2FC",
-                        pval_col       = c("p_val_adj", "p_val"),
-                        ranking_fun    = c("signed_log10_p", "logFC"),
-                        pval_cutoff    = 1,
-                        logFC_cutoff   = 0,
-                        minSize        = 5,
-                        maxSize        = 500,
-                        padjust_method = "BH",
-                        nproc          = 0) {
+enrichIt <- function(input.data,
+                     gene.sets,
+                     gene_col       = NULL,
+                     logFC_col      = "avg_log2FC",
+                     pval_col       = c("p_val_adj", "p_val"),
+                     ranking_fun    = c("signed_log10_p", "logFC"),
+                     pval_cutoff    = 1,
+                     logFC_cutoff   = 0,
+                     minSize        = 5,
+                     maxSize        = 500,
+                     padjust_method = "BH",
+                     nproc          = 0) {
   
   if (!requireNamespace("fgsea", quietly = TRUE))
     stop("Package 'fgsea' is required.")
@@ -119,16 +119,25 @@ fgseaEscape <- function(input.data,
   ## ------------------------------------------------------------------------
   gene.sets <- .GS.check(gene.sets)
   
+  ## Decide scoreType automatically ----------------------------------------
+  score_type <- if (all(stats >= 0)) {
+    "pos"                     # every value ≥0
+  } else if (all(stats <= 0)) {
+    "neg"                     # every value ≤0
+  } else {
+    "std"                     # mixture of positive and negative
+  }
+  
   res <- fgsea::fgsea(
     pathways = gene.sets,
     stats    = stats,
     minSize  = minSize,
     maxSize  = maxSize,
     nproc    = nproc,
-    scoreType = "std"
-  )
+    scoreType = score_type)
   
   ## tidy --------------------------------------------------------
+  res$geneRatio <- vapply(res$leadingEdge, length, integer(1L)) / res$size
   res$leadingEdge <- vapply(res$leadingEdge,
                             paste, collapse = ";", character(1))
   res$padj <- p.adjust(res$pval, method = padjust_method)
