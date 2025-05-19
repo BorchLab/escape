@@ -2,6 +2,7 @@
 
 export(densityEnrichment)
 export(escape.matrix)
+export(fgseaEscape)
 export(getGeneSets)
 export(geyserEnrichment)
 export(gseaEnrichment)

@@ -70,12 +70,12 @@ multiple biological groups (clusters, conditions, samples, ...).
 \examples{
 pbmc_small <- SeuratObject::pbmc_small
 
-GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 
 gseaEnrichment(pbmc_small,
                gene.set.use = "Bcells",
-               gene.sets    = GS,
+               gene.sets    = gs,
                group.by     = "groups",
                summary.fun  = "mean",
                digits       = 3)

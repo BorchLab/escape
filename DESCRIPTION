@@ -28,6 +28,7 @@ Suggests:
     BiocParallel,
     BiocStyle,
     dplyr,
+    fgsea,
     GSEABase,
     ggridges,
     ggpointdensity,
