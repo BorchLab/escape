@@ -433,7 +433,7 @@
 
 utils::globalVariables(c(
   "ES", "grp", "x", "y", "xend", "yend", "group", "value", "variable",
-  "gene.set.query"
+  "gene.set.query", "index"
 ))
 
 
