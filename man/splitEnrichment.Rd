@@ -2,14 +2,14 @@
 % Please edit documentation in R/splitEnrichment.R
 \name{splitEnrichment}
 \alias{splitEnrichment}
-\title{Visualize enrichment results with a split violin plot}
+\title{Plot Enrichment Distributions Using Split or Dodged Violin Plots}
 \usage{
 splitEnrichment(
   input.data,
   assay = NULL,
   split.by = NULL,
   group.by = NULL,
-  gene.set = NULL,
+  gene.set.use = NULL,
   order.by = NULL,
   facet.by = NULL,
   scale = TRUE,
@@ -17,49 +17,51 @@ splitEnrichment(
 )
 }
 \arguments{
-\item{input.data}{Enrichment output from \code{\link{escape.matrix}} or
-\code{\link{runEscape}}.}
+\item{input.data}{Output of \code{\link{escape.matrix}} or a single‑cell
+object previously processed by \code{\link{runEscape}}.}
 
-\item{assay}{Name of the assay to plot if data is a single-cell object.}
+\item{assay}{Name of the assay holding enrichment scores when
+`input.data` is a single‑cell object. Ignored otherwise.}
 
-\item{split.by}{Variable to form the split violin, must have 2 levels.}
+\item{split.by}{A metadata column used to split or color violins. Must contain 
+at least two levels. If it contains more than two, dodged violins are used.}
 
-\item{group.by}{Categorical parameter to plot along the x.axis. If input is
-a single-cell object the default will be cluster.}
+\item{group.by}{Metadata column plotted on the *x*‑axis.  Defaults to the
+Seurat/SCE `ident` slot when `NULL`.}
 
-\item{gene.set}{Gene set to plot (on y-axis).}
+\item{gene.set.use}{Character(1).  Name of the gene set to display.}
 
-\item{order.by}{Method to organize the x-axis - \strong{"mean"} will arrange
-the x-axis by the mean of the gene.set, while \strong{"group"} will arrange
-the x-axis by in alphanumerical order. Using \strong{NULL} will not reorder
-the x-axis.}
+\item{order.by}{How to arrange the x‑axis:
+*`"mean"`* – groups ordered by decreasing group mean;
+*`"group"`* – natural sort of group labels;
+*`NULL`* – keep original ordering.}
 
-\item{facet.by}{Variable to facet the plot into n distinct graphs.}
+\item{facet.by}{Optional metadata column used to facet the plot.}
 
-\item{scale}{Visualize raw values \strong{FALSE} or Z-transform 
-enrichment values \strong{TRUE}.}
+\item{scale}{Logical; if `TRUE` scores are centred/scaled (Z‑score) prior
+to plotting.}
 
-\item{palette}{Colors to use in visualization - input any 
-\link[grDevices]{hcl.pals}.}
+\item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }
 \value{
-ggplot2 object violin-based distributions of selected gene.set
+A [ggplot2] object.
 }
 \description{
-This function allows to the user to examine the distribution of 
-enrichment across groups by generating a split violin plot.
+Visualize the distribution of gene set enrichment scores across groups using
+violin plots. When `split.by` contains exactly two levels, the function draws
+split violins for easy group comparison within each `group.by` category. If
+`split.by` has more than two levels, standard dodged violins are drawn instead.
 }
 \examples{
-GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
-pbmc_small <- SeuratObject::pbmc_small
-pbmc_small <- runEscape(pbmc_small, 
-                        gene.sets = GS, 
-                        min.size = NULL)
-                        
-splitEnrichment(pbmc_small, 
+           
+pbmc <- SeuratObject::pbmc_small |>
+  runEscape(gene.sets = gs, min.size = NULL)
+
+splitEnrichment(input.data = pbmc,
                 assay = "escape",
                 split.by = "groups",
-                gene.set = "Tcells")
+                gene.set.use = "Tcells")
 
 }

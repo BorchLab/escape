@@ -5,7 +5,7 @@
 \title{Get a collection of gene sets from the msigdb}
 \usage{
 getGeneSets(
-  species = "Homo sapiens",
+  species = c("Homo sapiens", "Mus musculus"),
   library = NULL,
   subcategory = NULL,
   gene.sets = NULL,
@@ -14,24 +14,22 @@ getGeneSets(
 )
 }
 \arguments{
-\item{species}{The scientific name of the species of interest; only 
-"Homo sapiens" or "Mus musculus" are supported.}
+\item{species}{`"Homo sapiens"` (default) or `"Mus musculus"`.}
 
-\item{library}{A character vector of main collections (e.g. "H", "C5"). 
-If provided, only gene sets in these collections are returned.}
+\item{library}{Character. Optional vector of main collection codes 
+(e.g. `"H"`, `"C5"`).}
 
-\item{subcategory}{A character vector specifying sub-collection abbreviations 
-(e.g. "CGP", "CP:REACTOME") to further subset the gene sets.}
+\item{subcategory}{Character. Optional vector of sub-collection codes 
+(e.g. `"GO:BP"`).}
 
-\item{gene.sets}{A character vector of specific gene set names to select. 
-This filter is applied after other subsetting.}
+\item{gene.sets}{Character. Optional vector of specific gene-set names.}
 
-\item{version}{The version of MSigDB to use (default "7.4").}
+\item{version}{MSigDB version (character, default `"7.4"`).}
 
-\item{id}{The gene identifier type to use (default "SYM" for gene symbols).}
+\item{id}{Identifier type (default `"SYM"` for symbols).}
 }
 \value{
-A named list of gene identifiers for each gene set.
+A named `list` of character vectors (gene IDs).
 }
 \description{
 This function retrieves gene sets from msigdb and caches the downloaded object 
@@ -50,4 +48,5 @@ gs <- getGeneSets(species = "Homo sapiens",
                   library = c("C2", "C5"), 
                   subcategory = "GO:BP")
 }
+
 }

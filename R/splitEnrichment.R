@@ -1,3 +1,124 @@
+#' Plot Enrichment Distributions Using Split or Dodged Violin Plots
+#'
+#' Visualize the distribution of gene set enrichment scores across groups using
+#' violin plots. When `split.by` contains exactly two levels, the function draws
+#' split violins for easy group comparison within each `group.by` category. If
+#' `split.by` has more than two levels, standard dodged violins are drawn instead.
+#'
+#' @param input.data Output of \code{\link{escape.matrix}} or a single‑cell
+#' object previously processed by \code{\link{runEscape}}.
+#' @param assay Name of the assay holding enrichment scores when
+#' `input.data` is a single‑cell object. Ignored otherwise.
+#' @param split.by A metadata column used to split or color violins. Must contain 
+#'   at least two levels. If it contains more than two, dodged violins are used.
+#' @param group.by Metadata column plotted on the *x*‑axis.  Defaults to the
+#' Seurat/SCE `ident` slot when `NULL`.
+#' @param gene.set.use Character(1).  Name of the gene set to display.
+#' @param order.by How to arrange the x‑axis:
+#'   *`"mean"`* – groups ordered by decreasing group mean;
+#'   *`"group"`* – natural sort of group labels;
+#'   *`NULL`* – keep original ordering.
+#' @param facet.by Optional metadata column used to facet the plot.
+#' @param scale Logical; if `TRUE` scores are centred/scaled (Z‑score) prior
+#' to plotting.
+#' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
+#'
+#' @return A [ggplot2] object.
+#'
+#' @import ggplot2
+#' @importFrom grDevices hcl.pals
+#' @importFrom stats as.formula
+#'
+#' @examples
+#' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+#'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+#'            
+#' pbmc <- SeuratObject::pbmc_small |>
+#'   runEscape(gene.sets = gs, min.size = NULL)
+#'
+#' splitEnrichment(input.data = pbmc,
+#'                 assay = "escape",
+#'                 split.by = "groups",
+#'                 gene.set.use = "Tcells")
+#'
+#' @export
+splitEnrichment <- function(input.data,
+                            assay = NULL,
+                            split.by = NULL,
+                            group.by = NULL,
+                            gene.set.use = NULL,
+                            order.by = NULL,
+                            facet.by = NULL,
+                            scale = TRUE,
+                            palette = "inferno") {
+  
+  if (is.null(split.by)) stop("Please specify a variable for 'split.by'.")
+  if (is.null(group.by)) group.by <- "ident"
+  
+  # Prepare tidy data with relevant metadata columns
+  enriched <- .prepData(input.data, assay, gene.set.use, group.by, split.by, facet.by)
+  
+  # Determine the number of levels in the splitting variable
+  split.levels <- unique(enriched[[split.by]])
+  n.levels     <- length(split.levels)
+  if (n.levels < 2) stop("split.by must have at least two levels.")
+  
+  # Optional Z-score scaling of enrichment values
+  if (scale) {
+    enriched[[gene.set.use]] <- scale(enriched[[gene.set.use]])
+  }
+  
+  # Optional reordering of x-axis categories
+  if (!is.null(order.by)) {
+    enriched <- .orderFunction(enriched, order.by, group.by)
+  }
+  
+  # Create a composite group for proper boxplot dodging
+  enriched$group_split <- interaction(enriched[[group.by]], enriched[[split.by]], sep = "_")
+  dodge <- position_dodge(width = 0.8)
+  
+  # Base plot
+  plot <- ggplot(enriched, aes(x = .data[[group.by]],
+                               y = .data[[gene.set.use]],
+                               fill = .data[[split.by]])) +
+    xlab(group.by) +
+    ylab(paste0(gene.set.use, "\nEnrichment Score")) +
+    labs(fill = split.by) +
+    scale_fill_manual(values = .colorizer(palette, n.levels)) +
+    theme_classic()
+  
+  # Split violin if binary, otherwise dodge standard violins
+  if (n.levels == 2) {
+    plot <- plot +
+      geom_split_violin(alpha = 0.8, lwd = 0.25)  +
+      geom_boxplot(width = 0.1,
+                   fill = "grey",
+                   alpha = 0.6,
+                   outlier.shape = NA,
+                   position = position_identity(),
+                   notch = FALSE)
+  } else {
+    plot <- plot +
+      geom_violin(position = dodge, alpha = 0.8, lwd = 0.25) +
+      geom_boxplot(width = 0.1,
+                   fill = "grey",
+                   alpha = 0.6,
+                   outlier.shape = NA,
+                   position = dodge,
+                   notch = FALSE,
+                   aes(group = .data$group_split))
+  }
+  
+
+  
+  # Optional faceting
+  if (!is.null(facet.by)) {
+    plot <- plot + facet_grid(as.formula(paste(". ~", facet.by)))
+  }
+  
+  return(plot)
+}
+
 #Developing split violin plot
 #Code from: https://stackoverflow.com/a/45614547
 GeomSplitViolin <- ggproto("GeomSplitViolin", GeomViolin, 
@@ -41,99 +162,3 @@ geom_split_violin <-
           inherit.aes = inherit.aes, params = list(trim = trim, scale = scale, 
                                                    draw_quantiles = draw_quantiles, na.rm = na.rm, ...))
   }
-
-#' Visualize enrichment results with a split violin plot
-#' 
-#' This function allows to the user to examine the distribution of 
-#' enrichment across groups by generating a split violin plot.
-#'
-#' @param input.data Enrichment output from \code{\link{escape.matrix}} or
-#' \code{\link{runEscape}}.
-#' @param assay Name of the assay to plot if data is a single-cell object.
-#' @param split.by Variable to form the split violin, must have 2 levels.
-#' @param group.by Categorical parameter to plot along the x.axis. If input is
-#' a single-cell object the default will be cluster.
-#' @param gene.set Gene set to plot (on y-axis).
-#' @param order.by Method to organize the x-axis - \strong{"mean"} will arrange
-#' the x-axis by the mean of the gene.set, while \strong{"group"} will arrange
-#' the x-axis by in alphanumerical order. Using \strong{NULL} will not reorder
-#' the x-axis.
-#' @param facet.by Variable to facet the plot into n distinct graphs.
-#' @param scale Visualize raw values \strong{FALSE} or Z-transform 
-#' enrichment values \strong{TRUE}.
-#' @param palette Colors to use in visualization - input any 
-#' \link[grDevices]{hcl.pals}.
-#'
-#' @import ggplot2
-#' 
-#' @examples
-#' GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
-#'            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
-#' pbmc_small <- SeuratObject::pbmc_small
-#' pbmc_small <- runEscape(pbmc_small, 
-#'                         gene.sets = GS, 
-#'                         min.size = NULL)
-#'                         
-#' splitEnrichment(pbmc_small, 
-#'                 assay = "escape",
-#'                 split.by = "groups",
-#'                 gene.set = "Tcells")
-#'
-#' @export
-#'
-#' @return ggplot2 object violin-based distributions of selected gene.set
-splitEnrichment <- function(input.data,
-                            assay = NULL,
-                            split.by = NULL,
-                            group.by = NULL, 
-                            gene.set = NULL,
-                            order.by = NULL,
-                            facet.by = NULL,
-                            scale = TRUE,
-                            palette = "inferno") {
-  if(is.null(split.by)){
-    stop("Please select a variable with 'split.by' to generate the splitEnrichment() plots")
-  } 
-  
-  if(is.null(group.by)) {
-    group.by <- "ident"
-  }
-  
-  enriched <- .prepData(input.data, assay, gene.set, group.by, split.by, facet.by) 
-  
-  if (length(unique(enriched[,split.by])) != 2) {
-    message("SplitEnrichment() can only work for binary variables - reselect 'split.by'")
-  }
-  
-  if(scale) {
-    enriched[,gene.set] <- scale(enriched[,gene.set])
-  }
-  
-  if(!is.null(order.by) && !is.null(group.by)) {
-    enriched <- .orderFunction(enriched, order.by, group.by)
-  }
-  
-  col <- length(unique(enriched[,split.by]))
-  plot <- ggplot(enriched, aes(x = enriched[,group.by], 
-                                 y = enriched[,gene.set], 
-                                 fill = enriched[,split.by])) + 
-                  xlab(group.by) 
-
-  plot <- plot + 
-          geom_split_violin(alpha=0.8, lwd= 0.25) +
-          geom_boxplot(width=0.1, 
-                       fill = "grey", 
-                       alpha=0.5, 
-                       outlier.alpha = 0,
-                       notch = TRUE)  + 
-          ylab(paste0(gene.set, "\n Enrichment Score")) +
-          labs(fill = split.by) + 
-          scale_fill_manual(values = .colorizer(palette, col))+
-          theme_classic() 
-
-  if (!is.null(facet.by)) {
-    plot <- plot + 
-            facet_grid(as.formula(paste('. ~', facet.by))) 
-  }
-  return(plot)
-}
