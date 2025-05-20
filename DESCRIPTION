@@ -1,54 +1,55 @@
 Package: escape
 Title: Easy single cell analysis platform for enrichment
-Version: 2.3.0
+Version: 2.5.0
 Authors@R: c(
     person(given = "Nick", family = "Borcherding", role = c("aut", "cre"), email = "ncborch@gmail.com"),
     person(given = "Jared", family = "Andrews", role = c("aut"), email = "jared.andrews07@gmail.com"),
     person(given = "Alexei", family = "Martsinkovskiy", role = c("ctb"), email = "alexei.martsinkovskiy@gmail.com")
     )
-Description: A bridging R package to facilitate gene set enrichment analysis (GSEA) in the context of single-cell RNA sequencing. Using raw count information, Seurat objects, or SingleCellExperiment format, users can perform and visualize ssGSEA, GSVA, AUCell, and UCell-based enrichment calculations across individual cells. 
+Description: A bridging R package to facilitate gene set enrichment analysis (GSEA) in the context of single-cell RNA sequencing. Using raw count information, Seurat objects, or SingleCellExperiment format, users can perform and visualize ssGSEA, GSVA, AUCell, and UCell-based enrichment calculations across individual cells. Alternatively, escape supports use of rank-based GSEA, such as the use of differential gene expression via fgsea.
 License: MIT + file LICENSE 
 Encoding: UTF-8
 LazyData: false
 RoxygenNote: 7.3.2
 biocViews: Software, SingleCell, Classification, Annotation, GeneSetEnrichment, Sequencing, GeneSignaling, Pathways
 Depends: R (>= 4.1)
-Imports: 
+Imports:
+    ggdist,
+    ggplot2 (>= 3.5.0),
+    grDevices,
+    Matrix,
+    MatrixGenerics,
+    methods,
+    stats,
+    SummarizedExperiment,
+    utils
+Suggests:
     AUCell,
     BiocParallel,
-    grDevices,
-    dplyr,
-    ggdist,
-    ggplot2,
-    ggpointdensity,
-    GSEABase,
-    GSVA,
-    SingleCellExperiment,
-    ggridges,
-    msigdb,
-    stats,
-    reshape2,
-    patchwork,
-    MatrixGenerics,
-    utils,
-    SummarizedExperiment,
-    UCell,
-    stringr,
-    methods,
-    SeuratObject,
-    Matrix
-Suggests: 
-    Seurat,
-    hexbin,
-    scran,
-    knitr,
-    rmarkdown,
-    markdown,
     BiocStyle,
-    RColorBrewer,
+    dplyr,
+    fgsea,
+    GSEABase,
+    ggraph,
+    ggridges,
+    ggpointdensity,
+    GSVA,
+    hexbin,
+    igraph,
+    irlba,
+    knitr,
+    msigdb,
+    patchwork,
+    rmarkdown,
     rlang,
+    scran,
+    SeuratObject,
+    Seurat,
+    SingleCellExperiment,
     spelling,
+    stringr,
     testthat (>= 3.0.0),
-    vdiffr
+    UCell
 VignetteBuilder: knitr
 Language: en-US
+BugReports: https://github.com/BorchLab/escape/issues
