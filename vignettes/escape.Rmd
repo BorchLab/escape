@@ -69,7 +69,13 @@ sce.pbmc <- as.SingleCellExperiment(pbmc_small, assay = "RNA")
 
 # Getting Gene Sets
 
-## Option 1: MSigDB via ```getGeneSets()```
+## Option 1: Built-In gene sets
+
+```{r}
+data("escape.gene.sets", package="escape")
+```
+
+## Option 2: MSigDB via ```getGeneSets()```
 
 Gene set enrichment analysis begins by identifying the appropriate gene sets for your study. The ```getGeneSets()``` function simplifies this process by extracting one or more gene set libraries from the Molecular Signature Database (MSigDB) and returning them as a GSEABase GeneSetCollection object. Note that the first time you run ```getGeneSets()```, it downloads a complete local copy of the gene sets, which may take a little while. Future calls will use the cached version, greatly improving performance.
 
@@ -84,11 +90,8 @@ In addition, the function supports further subsetting through these parameters:
 * **subcategory**: Narrow down your selection by specifying subcategories within a library. Examples include "CGN", "CGP", "CP:BIOCARTA", "CP:KEGG", "GO:BP", "IMMUNESIGDB", etc.
 * **gene.sets:** Isolate individual pathways or gene sets by providing their specific names.
 
-## Option 2: Built-In gene sets
-
-```{r, eval = FALSE}
-data("escape.gene.sets", package="escape")
-gene.sets <- escape.gene.sets
+```{r eval=FALSE}
+GS.hallmark <- getGeneSets(library = "H")
 ```
 
 ## Option 3: Define personal gene sets
@@ -183,7 +186,7 @@ escape has 2 major functions - the first being ```escape.matrix()```, which serv
 
 ```{r tidy = FALSE}
 enrichment.scores <- escape.matrix(pbmc_small, 
-                                   gene.sets = GS.hallmark, 
+                                   gene.sets = escape.gene.sets, 
                                    groups = 1000, 
                                    min.size = 5)
 
@@ -198,10 +201,10 @@ Multi-core support is for all methods is available through [BiocParallel](https:
 
 ```{r tidy=FALSE, eval=FALSE}
 enrichment.scores <- escape.matrix(pbmc_small, 
-                                   gene.sets = GS.hallmark, 
+                                   gene.sets = escape.gene.sets, 
                                    groups = 1000, 
-                                   min.size = 5, 
-                                   BPPARAM = SnowParam(workers = 2))
+                                   min.size = 3, 
+                                   BPPARAM = BiocParallel::SnowParam(workers = 2))
 ```
 
 ## runEscape
@@ -211,14 +214,14 @@ Alternatively, we can use ```runEscape()``` to calculate the enrichment score an
 ```{r tidy = FALSE}
 pbmc_small <- runEscape(pbmc_small, 
                         method = "ssGSEA",
-                        gene.sets = GS.hallmark, 
+                        gene.sets = escape.gene.sets, 
                         groups = 1000, 
-                        min.size = 5,
+                        min.size = 3,
                         new.assay.name = "escape.ssGSEA")
 
 sce.pbmc <- runEscape(sce.pbmc, 
                       method = "UCell",
-                      gene.sets = GS.hallmark, 
+                      gene.sets = escape.gene.sets, 
                       groups = 1000, 
                       min.size = 5,
                       new.assay.name = "escape.UCell")
@@ -230,7 +233,7 @@ We can quickly examine the attached enrichment scores using the visualization/wo
 #Define color palette 
 colorblind_vector <- hcl.colors(n=7, palette = "inferno", fixup = TRUE)
 
-FeaturePlot(pbmc_small, "HALLMARK-APOPTOSIS") + 
+FeaturePlot(pbmc_small, "Proinflammatory") + 
   scale_color_gradientn(colors = colorblind_vector) + 
   theme(plot.title = element_blank())
 ```
@@ -244,7 +247,7 @@ There can be inherent bias in enrichment values due to drop out in single-cell e
 ```{r}
 pbmc_small <- performNormalization(input.data = pbmc_small, 
                                    assay = "escape.ssGSEA", 
-                                   gene.sets = GS.hallmark)
+                                   gene.sets = escape.gene.sets)
 ```
 
 An alternative for scaling by expressed gene sets would be to use a scaling factor previously calculated during normal single-cell data processing and quality control. This can be done using the **scale.factor** argument and providing a vector. 
@@ -252,7 +255,7 @@ An alternative for scaling by expressed gene sets would be to use a scaling fact
 ```{r}
 pbmc_small <- performNormalization(input.data = pbmc_small, 
                                    assay = "escape.ssGSEA", 
-                                   gene.sets = GS.hallmark, 
+                                   gene.sets = escape.gene.sets, 
                                    scale.factor = pbmc_small$nFeature_RNA)
 ```
 
@@ -329,7 +332,7 @@ We can also focus on individual gene sets - one approach is to use ```geyserEnri
 ```{r}
 geyserEnrichment(pbmc_small, 
                  assay = "escape.ssGSEA",
-                 gene.set = "HALLMARK-INTERFERON-GAMMA-RESPONSE")
+                 gene.set = "T1-Interferon")
 ```
 
 To show the additional parameters that appear in visualizations of individual enrichment gene sets - we can reorder the groups by the mean of the gene set using **order.by** = "mean".
@@ -337,7 +340,7 @@ To show the additional parameters that appear in visualizations of individual en
 ```{r}
 geyserEnrichment(pbmc_small, 
                  assay = "escape.ssGSEA",
-                 gene.set = "HALLMARK-INTERFERON-GAMMA-RESPONSE", 
+                 gene.set = "T1-Interferon", 
                  order.by = "mean")
 ```
 
@@ -346,7 +349,7 @@ What if we had 2 separate samples or groups within the data? Another parameter w
 ```{r}
 geyserEnrichment(pbmc_small, 
                  assay = "escape.ssGSEA",
-                 gene.set = "HALLMARK-INTERFERON-GAMMA-RESPONSE", 
+                 gene.set = "T1-Interferon", 
                  facet.by = "groups")
 ```
 
@@ -355,8 +358,8 @@ Lastly, we can select the way the color is applied to the plot using the **color
 ```{r}
 geyserEnrichment(pbmc_small, 
                  assay = "escape.ssGSEA",
-                 gene.set = "HALLMARK-INTERFERON-GAMMA-RESPONSE", 
-                 color.by  = "HALLMARK-INTERFERON-GAMMA-RESPONSE")
+                 gene.set = "T1-Interferon", 
+                 color.by  = "T1-Interferon")
 ```
 
 ## ridgeEnrichment
@@ -366,7 +369,7 @@ Similar to the ```geyserEnrichment()``` the ```ridgeEnrichment()``` can display 
 ```{r}
 ridgeEnrichment(sce.pbmc, 
                 assay = "escape.UCell",
-                gene.set = "HALLMARK-IL2-STAT5-SIGNALING")
+                gene.set = "T2_Interferon")
 ```
 
 We can get the relative position of individual cells along the x-axis using the **add.rug** parameter.
@@ -374,7 +377,7 @@ We can get the relative position of individual cells along the x-axis using the 
 ```{r}
 ridgeEnrichment(sce.pbmc, 
                 assay = "escape.UCell",
-                gene.set = "HALLMARK-IL2-STAT5-SIGNALING",
+                gene.set = "T2_Interferon",
                 add.rug = TRUE,
                 scale = TRUE)
 ```
@@ -386,7 +389,7 @@ Another distribution visualization is a violin plot, which we separate and direc
 ```{r}
 splitEnrichment(pbmc_small, 
                 assay = "escape.ssGSEA",
-                gene.set = "HALLMARK-IL2-STAT5-SIGNALING", 
+                gene.set = "Lipid-mediators", 
                 split.by = "groups")
 ```
 
@@ -395,10 +398,11 @@ If selecting a **split.by** variable with more than 2 levels, ```splitEnrichment
 ```{r}
 splitEnrichment(pbmc_small, 
                 assay = "escape.ssGSEA",
-                gene.set = "HALLMARK-IL2-STAT5-SIGNALING", 
+                gene.set = "Lipid-mediators", 
                 split.by = "ident", 
                 group.by = "groups")
 ```
+
 ## gseaEnrichment
 
 ```gseaEnrichment()``` reproduces the two-panel GSEA graphic from Subramanian et al. (2005):
@@ -417,8 +421,8 @@ to derive NES and p.
 
 ```{r}
 gseaEnrichment(pbmc_small,
-               gene.set.use = "HALLMARK_INTERFERON_GAMMA_RESPONSE",
-               gene.sets    = GS.hallmark,
+               gene.set.use = "T2_Interferon",
+               gene.sets    = escape.gene.sets,
                group.by     = "ident",
                summary.fun  = "median",
                nperm        = 1000)
@@ -436,10 +440,9 @@ gseaEnrichment(pbmc_small,
 
 ```{r tidy=FALSE, eval=FALSE}
 densityEnrichment(pbmc_small, 
-                  gene.set.use = "HALLMARK-IL6-JAK-STAT3-SIGNALING", 
-                  gene.sets = GS.hallmark)
+                  gene.set.use = "T2_Interferon", 
+                  gene.sets = escape.gene.sets)
 ```
-
 
 ## scatterEnrichment
 
@@ -448,8 +451,8 @@ It may be advantageous to look at the distribution of multiple gene sets - here 
 ```{r}
 scatterEnrichment(pbmc_small, 
                   assay = "escape.ssGSEA",
-                  x.axis = "HALLMARK-INTERFERON-GAMMA-RESPONSE",
-                  y.axis = "HALLMARK-IL6-JAK-STAT3-SIGNALING")
+                  x.axis = "T2-Interferon",
+                  y.axis = "Lipid-mediators")
 ```
 
 The scatter plot can also be converted into a hexbin, another method for summarizing the individual cell distributions along the x and y axis, by setting **style** = "hex". 
@@ -457,8 +460,8 @@ The scatter plot can also be converted into a hexbin, another method for summari
 ```{r}
 scatterEnrichment(sce.pbmc, 
                   assay = "escape.UCell",
-                  x.axis = "HALLMARK-INTERFERON-GAMMA-RESPONSE",
-                  y.axis = "HALLMARK-IL6-JAK-STAT3-SIGNALING", 
+                  x.axis = "T2_Interferon",
+                  y.axis = "Lipid_mediators",
                   style = "hex")
 ```
 
@@ -537,10 +540,8 @@ DEG.markers <- FindMarkers(pbmc_small,
                            ident.2 = "1")
 
 GSEA.results <- enrichIt(input.data = DEG.markers, 
-                         gene.sets = GS.hallmark, 
-                         ranking_fun = "signed_log10_p",      
-                         pval_cutoff = 0.05,                  
-                         logFC_cutoff = 0.25)                  
+                         gene.sets = escape.gene.sets, 
+                         ranking_fun = "signed_log10_p")               
 
 head(GSEA.results)
 ```
@@ -575,7 +576,7 @@ Differential enrichment analysis can be performed similar to differential gene e
 ```{r}
 pbmc_small <- performNormalization(pbmc_small, 
                                    assay = "escape.ssGSEA", 
-                                   gene.sets = GS.hallmark,
+                                   gene.sets = escape.gene.sets,
                                    make.positive = TRUE)
 
 all.markers <- FindAllMarkers(pbmc_small, 
