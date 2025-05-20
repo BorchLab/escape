@@ -9,7 +9,7 @@ enrichItPlot(
   plot.type = c("bar", "dot", "cnet"),
   top = 20,
   x.measure = "-log10(padj)",
-  colour.measure = x.measure,
+  color.measure = x.measure,
   show.counts = TRUE,
   palette = "inferno",
   ...
@@ -26,7 +26,7 @@ enrichItPlot(
 \item{x.measure}{A column in `res` mapped to the *x*-axis
 (ignored for `"cnet"`). Default `"-log10(padj)"`.}
 
-\item{colour.measure}{Column mapped to colour (dot plot only).
+\item{color.measure}{Column mapped to color (dot plot only).
 Default same as `x.measure`.}
 
 \item{show.counts}{Logical. Annotate bar plot with the `Count` (number of genes).}

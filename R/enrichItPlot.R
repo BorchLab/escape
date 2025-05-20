@@ -6,7 +6,7 @@
 #' (ranked by adjusted *p*). Set to `Inf` to keep all.
 #' @param x.measure A column in `res` mapped to the *x*-axis
 #' (ignored for `"cnet"`). Default `"-log10(padj)"`.
-#' @param colour.measure Column mapped to colour (dot plot only).
+#' @param color.measure Column mapped to color (dot plot only).
 #' Default same as `x.measure`.
 #' @param show.counts Logical. Annotate bar plot with the `Count` (number of genes).
 #' @param palette palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
@@ -30,7 +30,7 @@ enrichItPlot <- function(res,
                          plot.type      = c("bar", "dot", "cnet"),
                          top            = 20,
                          x.measure      = "-log10(padj)",
-                         colour.measure = x.measure,
+                         color.measure = x.measure,
                          show.counts    = TRUE,
                          palette        = "inferno",
                          ...) {
@@ -47,6 +47,12 @@ enrichItPlot <- function(res,
   if (!"Count" %in% names(res))
     res$Count <- vapply(strsplit(res$leadingEdge, ";"), length, integer(1))
   
+  # Convert Database to factor
+  if ("Database" %in% names(res)) {
+    res$Database[is.na(res$Database)] <- "Unknown"
+  } else {
+    res$Database <- "Unknown"
+  }
   res$Database <- factor(res$Database)
   res$Term     <- with(res, reorder(pathway, -padj))
   
@@ -61,7 +67,7 @@ enrichItPlot <- function(res,
   ## Bar Plot
   if (plot.type == "bar") {                 
     p <- ggplot2::ggplot(res,
-                         ggplot2::aes(x = .data[[x.measure]], y = Term)) +
+                         ggplot2::aes(x = .data[[x.measure]], y = .data$Term)) +
       ggplot2::geom_col(fill = .colorizer(palette, n = 1), ...) +
       ggplot2::facet_wrap(~ Database, scales = "free_y") +
       ggplot2::labs(x = x.measure, y = NULL) +
@@ -69,7 +75,7 @@ enrichItPlot <- function(res,
     
     if (isTRUE(show.counts)) {
       p <- p + ggplot2::geom_text(
-        ggplot2::aes(label = Count,
+        ggplot2::aes(label = .data$Count,
                      x = .data[[x.measure]] + max(.data[[x.measure]])*0.02),
         hjust = 0, size = 3)
     }
@@ -82,19 +88,19 @@ enrichItPlot <- function(res,
       stop("Install 'patchwork' for facetted output.")
     
     p <- ggplot2::ggplot(res,
-                         ggplot2::aes(x = geneRatio, y = Term,
-                                      colour = .data[[colour.measure]],
-                                      size   = size*geneRatio)) +
+                         ggplot2::aes(x = .data$geneRatio, y = .data$Term,
+                                      color = .data[[color.measure]],
+                                      size   = .data$size*.data$geneRatio)) +
       ggplot2::geom_point(...) +
       ggplot2::facet_wrap(~ Database, scales = "free_y") +
       ggplot2::scale_size_continuous(name = "Core Count") +
       ggplot2::labs(x = "geneRatio", y = NULL,
-                    colour = colour.measure) +
+                    color = color.measure) +
       ggplot2::theme_classic() +
       ggplot2::theme(legend.box = "vertical")
     
     if (!is.null(palette))
-      p <- p + ggplot2::scale_color_gradientn(colours = .colorizer(palette, 11))
+      p <- p + ggplot2::scale_color_gradientn(colors = .colorizer(palette, 11))
     return(patchwork::wrap_plots(p))
   
   # Network Plot
@@ -122,12 +128,12 @@ enrichItPlot <- function(res,
     
     ggraph::ggraph(g, layout = "fr") +
       ggraph::geom_edge_link(aes(alpha = after_stat(index)), show.legend = FALSE) +
-      ggraph::geom_node_point(aes(size = size,
-                                  colour = type)) +
-      ggraph::geom_node_text(aes(label = name),
+      ggraph::geom_node_point(aes(size = .data$size,
+                                  color = .data$type)) +
+      ggraph::geom_node_text(aes(label = .data$name),
                              repel = TRUE, size = 3,
                              vjust = 1.5, check_overlap = TRUE) +
-      ggplot2::scale_colour_manual(values = .colorizer(palette, n = 2)) +
+      ggplot2::scale_color_manual(values = .colorizer(palette, n = 2)) +
       ggplot2::theme_void()
   }
 }
