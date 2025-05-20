@@ -2,7 +2,7 @@
 % Please edit documentation in R/runEscape.R
 \name{escape.matrix}
 \alias{escape.matrix}
-\title{Calculate gene set enrichment scores}
+\title{Calculate Single-Cell Gene-Set Enrichment Scores}
 \usage{
 escape.matrix(
   input.data,
@@ -12,54 +12,93 @@ escape.matrix(
   min.size = 5,
   normalize = FALSE,
   make.positive = FALSE,
-  BPPARAM = SerialParam(),
+  min.expr.cells = 0,
+  min.filter.by = NULL,
+  BPPARAM = NULL,
   ...
 )
 }
 \arguments{
-\item{input.data}{The count matrix, Seurat, or Single-Cell Experiment object.}
+\item{input.data}{A raw‐counts matrix (`genes × cells`), a
+\link[SeuratObject]{Seurat} object, or a
+\link[SingleCellExperiment]{SingleCellExperiment}. Gene identifiers must
+match those in `gene.sets`.}
 
-\item{gene.sets}{Gene sets can be a list, output from 
-\code{\link{getGeneSets}}, or the built-in gene sets 
-in the escape package \code{\link{escape.gene.sets}}.}
+\item{gene.sets}{A named list of character vectors, the result of
+[getGeneSets()], or the built-in data object [escape.gene.sets]. 
+List names become column names in the result.}
 
-\item{method}{Select the method to calculate enrichment, \strong{AUCell},
-\strong{GSVA}, \strong{ssGSEA} or \strong{UCell}.}
+\item{method}{Scoring algorithm (case-insensitive). One of `"GSVA"`, 
+`"ssGSEA"`, `"UCell"`, or `"AUCell"`. Default **`"ssGSEA"`**.}
 
-\item{groups}{The number of cells to separate the enrichment calculation.}
+\item{groups}{Integer ≥ 1. Number of cells per processing chunk.
+Larger values reduce overhead but increase memory usage.  Default **1000**.}
 
-\item{min.size}{Minimum number of gene necessary to perform the enrichment
-calculation}
+\item{min.size}{Minimum number of genes from a set that must be detected
+in the expression matrix for that set to be scored.  Default **5**.
+Use `NULL` to disable filtering.}
 
-\item{normalize}{Whether to divide the enrichment score by the number 
-of genes \strong{TRUE} or report unnormalized \strong{FALSE}.}
+\item{normalize}{Logical. If `TRUE`, the score matrix is passed to
+[performNormalization()] (drop-out scaling and optional log transform).
+Default **FALSE**.}
 
-\item{make.positive}{During normalization shift enrichment values to a 
-positive range \strong{TRUE} for downstream analysis or not 
-\strong{TRUE} (default). Will only be applied if \strong{normalize = TRUE}.}
+\item{make.positive}{Logical. If `TRUE` *and* `normalize = TRUE`, shifts
+every gene-set column so its global minimum is zero, facilitating
+downstream log-ratio analyses.  Default **FALSE**.}
 
-\item{BPPARAM}{A BiocParallel::bpparam() object that for parallelization.}
+\item{min.expr.cells}{Numeric. Gene-expression filter threshold (see
+details above). Default **0** (no gene filtering).}
 
-\item{...}{pass arguments to AUCell GSVA, ssGSEA, or UCell call}
+\item{min.filter.by}{Character or `NULL`.  Column name in `meta.data`
+(Seurat) or `colData` (SCE) defining groups within which the
+`min.expr.cells` rule is applied.  Default **`NULL`**.}
+
+\item{BPPARAM}{A \pkg{BiocParallel} parameter object describing the
+parallel backend.}
+
+\item{...}{Extra arguments passed verbatim to the chosen back-end
+scoring function (`gsva()`, `ScoreSignatures_UCell()`, or
+`AUCell_calcAUC()`).}
 }
 \value{
-matrix of enrichment scores
+A numeric matrix with one row per cell and one column per gene set,
+ordered as in `gene.sets`.
 }
 \description{
-This function allows users to input both the single-cell RNA-sequencing 
-counts and output the enrichment scores as a matrix.
+`escape.matrix()` computes per-cell enrichment for arbitrary gene-set
+collections using one of four scoring back-ends and returns a dense numeric
+matrix (cells × gene-sets).  The expression matrix is processed in
+user-defined *chunks* (`groups`) so that memory use remains predictable;
+each chunk is dispatched in parallel via a \pkg{BiocParallel} `BPPARAM`
+backend.  Heavy engines (\pkg{GSVA}, \pkg{UCell}, \pkg{AUCell}) are loaded
+lazily, keeping them in the package’s \strong{Suggests} field.
 }
+\section{Supported methods}{
+
+\describe{
+  \item{`"GSVA"`}{Gene-set variation analysis (Poisson kernel).}
+  \item{`"ssGSEA"`}{Single-sample GSEA.}
+  \item{`"UCell"`}{Rank-based UCell scoring.}
+  \item{`"AUCell"`}{Area-under-the-curve ranking score.}
+}
+}
+
 \examples{
-GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
-pbmc_small <- SeuratObject::pbmc_small
-ES <- escape.matrix(pbmc_small, 
-                    gene.sets = GS, 
-                    min.size = NULL)
+
+pbmc <- SeuratObject::pbmc_small
+es   <- escape.matrix(pbmc, 
+                      gene.sets = gs,
+                      method = "ssGSEA", 
+                      groups = 500, 
+                      min.size = 3)
 
 }
 \seealso{
-\code{\link{getGeneSets}} to collect gene sets.
+[runEscape()] to attach scores to a single-cell object;
+[getGeneSets()] for MSigDB retrieval; [performNormalization()] for the
+optional normalization workflow.
 }
 \author{
 Nick Borcherding, Jared Andrews

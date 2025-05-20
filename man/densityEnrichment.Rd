@@ -2,32 +2,36 @@
 % Please edit documentation in R/densityEnrichment.R
 \name{densityEnrichment}
 \alias{densityEnrichment}
-\title{Visualize the mean density ranking of genes across gene set}
+\title{Visualize Mean Density Ranking of Genes Across Gene Sets}
 \usage{
 densityEnrichment(
   input.data,
-  gene.set.use = NULL,
-  gene.sets = NULL,
+  gene.set.use,
+  gene.sets,
   group.by = NULL,
+  rug.height = 0.02,
   palette = "inferno"
 )
 }
 \arguments{
-\item{input.data}{The single-cell object to use.}
+\item{input.data}{A \link[SeuratObject]{Seurat} object or a
+\link[SingleCellExperiment]{SingleCellExperiment}.}
 
-\item{gene.set.use}{Selected individual gene set.}
+\item{gene.set.use}{Character(1).  Name of the gene set to display.}
 
-\item{gene.sets}{The gene set library to use to extract 
-the individual gene set information from.}
+\item{gene.sets}{A named list of character vectors, the result of
+[getGeneSets()], or the built-in data object [escape.gene.sets].}
 
-\item{group.by}{Categorical parameter to plot along the x.axis. If input is
-a single-cell object the default will be cluster.}
+\item{group.by}{Metadata column. Defaults to the Seurat/SCE `ident` 
+slot when `NULL`.}
 
-\item{palette}{Colors to use in visualization - input any 
-\link[grDevices]{hcl.pals}.}
+\item{rug.height}{Vertical spacing of the hit rug as a fraction of the
+y-axis (default `0.02`).}
+
+\item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }
 \value{
-ggplot2 object mean rank gene density across groups
+A `patchwork`/`ggplot2` object.
 }
 \description{
 This function allows to the user to examine the mean ranking
@@ -36,12 +40,13 @@ the density function to display the relative position and distribution
 of rank.
 }
 \examples{
-GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
+           
 pbmc_small <- SeuratObject::pbmc_small
                         
 densityEnrichment(pbmc_small, 
                   gene.set.use = "Tcells",
-                  gene.sets = GS)
+                  gene.sets = gs)
 
 }

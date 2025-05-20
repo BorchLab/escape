@@ -2,7 +2,7 @@
 % Please edit documentation in R/heatmapEnrichment.R
 \name{heatmapEnrichment}
 \alias{heatmapEnrichment}
-\title{Generate a heatmap to visualize enrichment values}
+\title{Visualize Enrichment Value Summaries Using Heatmaps}
 \usage{
 heatmapEnrichment(
   input.data,
@@ -18,34 +18,32 @@ heatmapEnrichment(
 )
 }
 \arguments{
-\item{input.data}{Enrichment output from \code{\link{escape.matrix}} or
-\code{\link{runEscape}}.}
+\item{input.data}{Output of \code{\link{escape.matrix}} or a single‑cell
+object previously processed by \code{\link{runEscape}}.}
 
-\item{assay}{Name of the assay to plot if data is a single-cell object.}
+\item{assay}{Name of the assay holding enrichment scores when
+`input.data` is a single‑cell object. Ignored otherwise.}
 
-\item{group.by}{Categorical parameter to plot along the x.axis. If input is
-a single-cell object the default will be cluster.}
+\item{group.by}{Metadata column plotted on the *x*‑axis.  Defaults to the
+Seurat/SCE `ident` slot when `NULL`.}
 
-\item{gene.set.use}{Selected gene sets to visualize. If \strong{"all"}, the 
-heatmap will be generated across all gene sets.}
+\item{gene.set.use}{Vector of gene‑set names to plot, or \code{"all"}
+(default) to show every available gene set.}
 
-\item{cluster.rows}{Use Euclidean distance to order the row values.}
+\item{cluster.rows, cluster.columns}{Logical; if \code{TRUE}, rows/columns
+are ordered by Ward‑linkage hierarchical clustering (Euclidean distance).}
 
-\item{cluster.columns}{Use Euclidean distance to order the column values.}
+\item{facet.by}{Optional metadata column used to facet the plot.}
 
-\item{facet.by}{Variable to facet the plot into n distinct graphs.}
+\item{scale}{If \code{TRUE}, Z‑transforms each gene‑set column **after**
+summarization.}
 
-\item{scale}{Visualize raw values \strong{FALSE} or Z-transform 
-enrichment values \strong{TRUE}.}
+\item{summary.stat}{Method used to summarize expression within each}
 
-\item{summary.stat}{Use \strong{'median'} or \strong{'mean'} values
-to display.}
-
-\item{palette}{Colors to use in visualization - input any 
-\link[grDevices]{hcl.pals}.}
+\item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }
 \value{
-ggplot2 object with heatmap of mean enrichment values
+A \code{ggplot2} object.
 }
 \description{
 This function allows to the user to examine the heatmap with the mean
@@ -53,14 +51,12 @@ enrichment values by group. The heatmap will have the gene sets as rows
 and columns will be the grouping variable.
 }
 \examples{
-GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
-pbmc_small <- SeuratObject::pbmc_small
-pbmc_small <- runEscape(pbmc_small, 
-                        gene.sets = GS, 
-                        min.size = NULL)
-                        
-heatmapEnrichment(pbmc_small, 
-                  assay = "escape")
+           
+pbmc <- SeuratObject::pbmc_small |>
+  runEscape(gene.sets = gs, min.size = NULL)
+  
+heatmapEnrichment(pbmc, assay = "escape", palette = "viridis")
 
 }

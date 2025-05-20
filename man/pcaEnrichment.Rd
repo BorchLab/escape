@@ -2,7 +2,7 @@
 % Please edit documentation in R/pcaEnrichment.R
 \name{pcaEnrichment}
 \alias{pcaEnrichment}
-\title{Visualize the PCA of enrichment values}
+\title{Visualize the PCA of Enrichment Values}
 \usage{
 pcaEnrichment(
   input.data,
@@ -10,7 +10,7 @@ pcaEnrichment(
   x.axis = "PC1",
   y.axis = "PC2",
   facet.by = NULL,
-  style = "point",
+  style = c("point", "hex"),
   add.percent.contribution = TRUE,
   display.factors = FALSE,
   number.of.factors = 10,
@@ -18,37 +18,29 @@ pcaEnrichment(
 )
 }
 \arguments{
-\item{input.data}{PCA from \code{\link{performPCA}}.}
+\item{input.data}{Single‑cell object (Seurat / SCE) **or** the raw list
+returned by [`performPCA()`].}
 
-\item{dimRed}{Name of the dimensional reduction to plot if data is a single-cell object.}
+\item{dimRed}{Name of the dimensional‑reduction slot to pull from a
+single‑cell object. Ignored when `input.data` is the list output.}
 
-\item{x.axis}{Component to plot on the x.axis.}
+\item{x.axis, y.axis}{Character vectors naming the PCs to display (e.g. "PC1").}
 
-\item{y.axis}{Component set to plot on the y.axis.}
+\item{facet.by}{Metadata column to facet plot.}
 
-\item{facet.by}{Variable to facet the plot into n distinct graphs.}
+\item{style}{"point" (default) or "hex".}
 
-\item{style}{Return a \strong{"hex"} bin plot or a \strong{"point"}-based plot.}
+\item{add.percent.contribution}{Include percent variance explained in axis 
+labels.}
 
-\item{add.percent.contribution}{Add the relative percent of contribution of the 
-selected components to the axis labels.}
+\item{display.factors}{Draw arrows for the top gene‑set loadings.}
 
-\item{display.factors}{Add an arrow overlay to show the direction and magnitude of individual 
-gene sets on the PCA dimensions.}
+\item{number.of.factors}{Integer; how many loadings to display if
+`display.factors = TRUE`.}
 
-\item{number.of.factors}{The number of gene.sets to display on the overlay.}
+\item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 
-\item{palette}{Colors to use in visualization - input any 
-\link[grDevices]{hcl.pals}.}
-}
-\value{
-ggplot2 object with PCA distribution
-}
-\description{
-This function allows to the user to examine the distribution
-of principal components run on the enrichment values.
-}
-\examples{
+#' @examples 
 GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
 pbmc_small <- SeuratObject::pbmc_small
@@ -62,6 +54,12 @@ pbmc_small <- performPCA(pbmc_small,
 pcaEnrichment(pbmc_small,
               x.axis = "PC1",
               y.axis = "PC2",
-              dimRed = "escape.PCA")
-
+              dimRed = "escape.PCA")}
+}
+\value{
+A **ggplot2** object.
+}
+\description{
+This function allows to the user to examine the distribution
+of principal components run on the enrichment values.
 }

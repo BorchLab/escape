@@ -5,7 +5,7 @@
 \title{Perform Normalization on Enrichment Data}
 \usage{
 performNormalization(
-  sc.data,
+  input.data,
   enrichment.data = NULL,
   assay = "escape",
   gene.sets = NULL,
@@ -15,48 +15,50 @@ performNormalization(
 )
 }
 \arguments{
-\item{sc.data}{Single-cell object or matrix used in the gene set enrichment calculation in 
-\code{\link{escape.matrix}} or \code{\link{runEscape}}.}
+\item{input.data}{raw‐counts matrix (`genes × cells`), a 
+\link[SeuratObject]{Seurat} object, or a 
+\link[SingleCellExperiment]{SingleCellExperiment}. Gene identifiers must
+match those in `gene.sets`.}
 
-\item{enrichment.data}{The enrichment results from \code{\link{escape.matrix}} 
-or \code{\link{runEscape}} (optional)}
+\item{enrichment.data}{Output of \code{\link{escape.matrix}} or a single‑cell
+object previously processed by \code{\link{runEscape}}.}
 
-\item{assay}{Name of the assay to normalize if using a single-cell object}
+\item{assay}{Name of the assay holding enrichment scores when
+`input.data` is a single‑cell object. Ignored otherwise.}
 
-\item{gene.sets}{The gene set library to use to extract 
-the individual gene set information from}
+\item{gene.sets}{A named list of character vectors, the result of
+[getGeneSets()], or the built-in data object [escape.gene.sets]. 
+List names become column names in the result.}
 
-\item{make.positive}{Shift enrichment values to a positive range \strong{TRUE}
-for downstream analysis or not \strong{TRUE} (default).}
+\item{make.positive}{Logical; if `TRUE` shifts each column so its minimum is
+zero.}
 
-\item{scale.factor}{A vector to use for normalizing enrichment scores per cell.}
+\item{scale.factor}{Optional numeric vector overriding gene‑count scaling
+(length = #cells). Use when you want external per‑cell normalization factors.}
 
-\item{groups}{the number of cells to calculate normalization on at once.
-chunks matrix into groups sized chunks. Useful in case of memory issues.}
+\item{groups}{Integer ≥ 1.  Number of cells per processing chunk.
+Larger values reduce overhead but increase memory usage.  Default **1000**.}
 }
 \value{
-Single-cell object or matrix of normalized enrichment scores
+If `input.data` is an object, the same object with a new assay
+        "<assay>_normalized". Otherwise a matrix of normalized scores.
 }
 \description{
-This function allows users to normalize the enrichment calculations 
-by accounting for single-cell dropout and producing positive 
-values for downstream differential enrichment analyses. Default calculation 
-uses will scale the enrichment values by the number of genes present from 
-the gene set and then use a natural log transformation. A positive range
-values is useful for several downstream analyses, like differential 
-evaluation for log2-fold change, but will alter the original 
-enrichment values.
+Scales each enrichment value by the **number of genes from the set that are
+expressed** in that cell (non‑zero counts). Optionally shifts results into a
+positive range and/or applies a natural‑log transform for compatibility with
+log‑based differential tests.
 }
 \examples{
-GS <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
+gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))
-pbmc_small <- SeuratObject::pbmc_small
-pbmc_small <- runEscape(pbmc_small, 
-                        gene.sets = GS, 
-                        min.size = NULL)
+
+pbmc <- SeuratObject::pbmc_small |>
+  runEscape(gene.sets = gs,
+            min.size = NULL)
                         
-pbmc_small <- performNormalization(pbmc_small, 
-                                   assay = "escape", 
-                                   gene.sets = GS)
+pbmc <- performNormalization(pbmc, 
+                             assay = "escape", 
+                             gene.sets = gs)
 
 }
