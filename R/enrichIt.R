@@ -13,6 +13,8 @@
 #'     supply `gene_col`.
 #' @param gene.sets AA named list of character vectors, the result of
 #' [getGeneSets()], or the built-in data object [escape.gene.sets].
+#' @param gene_col Name of the column holding gene identifiers (ignored when 
+#' they are row-names). Default `NULL`.
 #' @param logFC_col,pval_col Column names for logFC and *p* (or adj.*p*)
 #' – defaults match Seurat’s `FindMarkers()`.
 #' @param minSize,maxSize Integer. Minimum / maximum pathway size passed to
@@ -43,6 +45,7 @@
 #' 
 #' @return `data.frame` with the usual fgsea columns plus a convenient
 #' `leadingEdge` character column collapsed with \";\".
+#' @importFrom stats p.adjust
 #' @export
 enrichIt <- function(input.data,
                      gene.sets,

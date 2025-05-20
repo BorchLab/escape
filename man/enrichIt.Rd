@@ -29,6 +29,9 @@ enrichIt(
 \item{gene.sets}{AA named list of character vectors, the result of
 [getGeneSets()], or the built-in data object [escape.gene.sets].}
 
+\item{gene_col}{Name of the column holding gene identifiers (ignored when 
+they are row-names). Default `NULL`.}
+
 \item{logFC_col, pval_col}{Column names for logFC and *p* (or adj.*p*)
 – defaults match Seurat’s `FindMarkers()`.}
 
