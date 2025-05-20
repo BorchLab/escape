@@ -410,7 +410,7 @@ splitEnrichment(pbmc_small,
 * Panel A – the running enrichment score (RES) as you “walk” down the ranked list.
 * Panel B – a rug showing exact positions of each pathway gene.
 
-It works on escape’s per-cell ranks, but collapses them across cells with a summary statistic (summary.fun = "median" by default).
+It works on escape’s per-cell ranks, but collapses them across cells with a summary statistic (summary.fun = "mean" by default).
 
 **How it works:** 
 
@@ -425,7 +425,7 @@ gseaEnrichment(pbmc_small,
                gene.set.use = "T2_Interferon",
                gene.sets    = escape.gene.sets,
                group.by     = "ident",
-               summary.fun  = "median",
+               summary.fun  = "mean",
                nperm        = 1000)
 ```
 
