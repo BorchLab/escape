@@ -21,8 +21,8 @@
 #' zero.
 #' @param scale.factor Optional numeric vector overriding gene‑count scaling
 #' (length = #cells). Use when you want external per‑cell normalization factors.
-#' @param groups Integer ≥ 1.  Number of cells per processing chunk.
-#' Larger values reduce overhead but increase memory usage.  Default **1000**.
+#' @param groups Integer >= 1.  Number of cells per processing chunk.
+#' Larger values reduce overhead but increase memory usage. Default **1000**.
 #'
 #' @examples 
 #' gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),

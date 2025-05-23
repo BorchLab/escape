@@ -23,7 +23,7 @@ object previously processed by \code{\link{runEscape}}.}
 \item{scale}{Logical; if `TRUE` standardises each gene-set column
 before PCA.}
 
-\item{n.dim}{Integer ≥1 or vector; the **largest** value sets the
+\item{n.dim}{Integer >= 1 or vector; the **largest** value sets the
 number of principal components to compute / keep.}
 
 \item{reduction.name, reduction.key}{Names used when writing back to a
