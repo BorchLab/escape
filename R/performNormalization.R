@@ -66,8 +66,6 @@ performNormalization <- function(input.data,
     }
   }
   
-
-  
   enriched <- if (assay.present) .pull.Enrich(input.data, assay) else enrichment.data
   if (is.null(enriched)) {
     stop("Could not obtain enrichment matrix, please set `assay` or supply `enrichment.data`.")
@@ -120,7 +118,7 @@ performNormalization <- function(input.data,
   
   ## 6. Return ------------------------------------------------------------
   if (.is_seurat_or_sce(input.data)) {
-    .adding.Enrich(input.data, normalized, paste0(assay %||% "escape", "_normalized"))
+    input.data <- .adding.Enrich(input.data, normalized, paste0(assay %||% "escape", "_normalized"))
   } else {
     normalized
   }
