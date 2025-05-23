@@ -25,7 +25,7 @@
 #' List names become column names in the result.
 #' @param method Scoring algorithm (case-insensitive). One of `"GSVA"`, 
 #' `"ssGSEA"`, `"UCell"`, or `"AUCell"`. Default **`"ssGSEA"`**.
-#' @param groups Integer ≥ 1. Number of cells per processing chunk.
+#' @param groups Integer >= 1. Number of cells per processing chunk.
 #'   Larger values reduce overhead but increase memory usage.  Default **1000**.
 #' @param min.size Minimum number of genes from a set that must be detected
 #' in the expression matrix for that set to be scored.  Default **5**.

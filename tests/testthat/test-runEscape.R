@@ -50,7 +50,7 @@ test_that("gene-sets failing min.size are dropped with message", {
 # --------------------------------------------------- min.expr.cells (global) -
 test_that("min.expr.cells filters genes globally", {
   sc0 <- get_score(min.expr.cells = 0)
-  sc5 <- get_score(min.expr.cells = 0.5)   # keep genes in ≥50% of cells
+  sc5 <- get_score(min.expr.cells = 0.5)   # keep genes in >= 50% of cells
   expect_true(is.matrix(sc5) && is.matrix(sc0))
   # dimension equality (gene filter should not affect cell × set shape)
   expect_equal(dim(sc0), dim(sc5))

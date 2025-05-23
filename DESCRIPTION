@@ -1,6 +1,6 @@
 Package: escape
 Title: Easy single cell analysis platform for enrichment
-Version: 2.5.1
+Version: 2.5.2
 Authors@R: c(
     person(given = "Nick", family = "Borcherding", role = c("aut", "cre"), email = "ncborch@gmail.com"),
     person(given = "Jared", family = "Andrews", role = c("aut"), email = "jared.andrews07@gmail.com"),

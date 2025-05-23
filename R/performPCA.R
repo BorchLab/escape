@@ -14,7 +14,7 @@
 #' `input.data` is a single‑cell object. Ignored otherwise.
 #' @param scale Logical; if `TRUE` standardises each gene-set column
 #' before PCA.
-#' @param n.dim Integer ≥1 or vector; the **largest** value sets the
+#' @param n.dim Integer >= 1 or vector; the **largest** value sets the
 #'   number of principal components to compute / keep.
 #' @param reduction.name,reduction.key  Names used when writing back to a
 #'   Seurat / SCE object.

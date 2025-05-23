@@ -36,8 +36,8 @@ zero.}
 \item{scale.factor}{Optional numeric vector overriding gene‑count scaling
 (length = #cells). Use when you want external per‑cell normalization factors.}
 
-\item{groups}{Integer ≥ 1.  Number of cells per processing chunk.
-Larger values reduce overhead but increase memory usage.  Default **1000**.}
+\item{groups}{Integer >= 1.  Number of cells per processing chunk.
+Larger values reduce overhead but increase memory usage. Default **1000**.}
 }
 \value{
 If `input.data` is an object, the same object with a new assay

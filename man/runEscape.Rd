@@ -32,7 +32,7 @@ List names become column names in the result.}
 \item{method}{Scoring algorithm (case-insensitive). One of `"GSVA"`, 
 `"ssGSEA"`, `"UCell"`, or `"AUCell"`. Default **`"ssGSEA"`**.}
 
-\item{groups}{Integer ≥ 1. Number of cells per processing chunk.
+\item{groups}{Integer >= 1. Number of cells per processing chunk.
 Larger values reduce overhead but increase memory usage.  Default **1000**.}
 
 \item{min.size}{Minimum number of genes from a set that must be detected
