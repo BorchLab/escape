@@ -23,7 +23,7 @@
 #' group **before** ranking: one of `"mean"` (default), `"median"`, `"max"`,
 #'`"sum"`, or `"geometric"`.
 #' @param p Weighting exponent in the KS statistic (classical GSEA uses `p = 1`).
-#' @param nperm Integer ≥ 0. Gene-label permutations per group (default 1000). 
+#' @param nperm Integer >= 0. Gene-label permutations per group (default 1000). 
 #' `0` value will skip NES/*p* calculation.
 #' @param rug.height Vertical spacing of the hit rug as a fraction of the
 #' y-axis (default `0.02`).

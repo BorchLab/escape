@@ -1,4 +1,4 @@
-# 2.5.1  (2025-05-19)
+# 2.5.3  (2025-05-19)
 
 ## Highlights
 * **Streamlined code-base** – major internal refactor for clarity, speed and a ~20 % smaller dependency tree.

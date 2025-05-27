@@ -36,7 +36,7 @@ group **before** ranking: one of `"mean"` (default), `"median"`, `"max"`,
 
 \item{p}{Weighting exponent in the KS statistic (classical GSEA uses `p = 1`).}
 
-\item{nperm}{Integer ≥ 0. Gene-label permutations per group (default 1000). 
+\item{nperm}{Integer >= 0. Gene-label permutations per group (default 1000). 
 `0` value will skip NES/*p* calculation.}
 
 \item{rug.height}{Vertical spacing of the hit rug as a fraction of the

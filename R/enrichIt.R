@@ -124,9 +124,9 @@ enrichIt <- function(input.data,
   
   ## Decide scoreType automatically ----------------------------------------
   score_type <- if (all(stats >= 0)) {
-    "pos"                     # every value ≥0
+    "pos"                     # every value >=0
   } else if (all(stats <= 0)) {
-    "neg"                     # every value ≤0
+    "neg"                     # every value <=0
   } else {
     "std"                     # mixture of positive and negative
   }
