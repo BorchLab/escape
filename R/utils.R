@@ -194,7 +194,7 @@
         SeuratObject::CreateAssayObject
       }
       suppressWarnings(
-        sc[[name]] <- fn(data = as.matrix(t(enrichment)))
+        sc[[name]] <- fn(data = as.matrix(Matrix::t(enrichment)))
       )
     } else {
       warning("SeuratObject package is required to add enrichment to Seurat object.")
