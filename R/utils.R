@@ -57,7 +57,7 @@
     df <- cbind(value = cnts[gene.set, ], meta)
     colnames(df)[1] <- gene.set
   } else {
-    df <- cbind(t(cnts[gene.set, , drop = FALSE]), meta)
+    df <- cbind(Matrix::t(cnts[gene.set, , drop = FALSE]), meta)
   }
   df
 }
@@ -194,7 +194,7 @@
         SeuratObject::CreateAssayObject
       }
       suppressWarnings(
-        sc[[name]] <- fn(data = as.matrix(t(enrichment)))
+        sc[[name]] <- fn(data = as.matrix(Matrix::t(enrichment)))
       )
     } else {
       warning("SeuratObject package is required to add enrichment to Seurat object.")
@@ -204,7 +204,7 @@
     if (requireNamespace("SummarizedExperiment", quietly = TRUE) &&
         requireNamespace("SingleCellExperiment", quietly = TRUE)) {
       alt <- SummarizedExperiment::SummarizedExperiment(
-        assays = list(data = t(enrichment))
+        assays = list(data = Matrix::t(enrichment))
       )
       SingleCellExperiment::altExp(sc, name) <- alt
     } else {
@@ -226,7 +226,7 @@
   } else if (.is_sce(sc)) {
     if (requireNamespace("SummarizedExperiment", quietly = TRUE) &&
         requireNamespace("SingleCellExperiment", quietly = TRUE)) {
-      t(SummarizedExperiment::assay(SingleCellExperiment::altExp(sc)[[name]]))
+      Matrix::t(SummarizedExperiment::assay(SingleCellExperiment::altExp(sc)[[name]]))
     } else {
       stop("SummarizedExperiment and SingleCellExperiment packages are required to pull enrichment from SCE object.")
     }
@@ -342,7 +342,7 @@
          },
          "UCELL" = {
            .load_backend("UCell")
-           t(UCell::ScoreSignatures_UCell(matrix  = expr,
+           Matrix::t(UCell::ScoreSignatures_UCell(matrix  = expr,
                                           features = gene_sets,
                                           name     = NULL,
                                           BPPARAM  = BPPARAM,

@@ -4,6 +4,7 @@ Version: 2.5.3
 Authors@R: c(
     person(given = "Nick", family = "Borcherding", role = c("aut", "cre"), email = "ncborch@gmail.com"),
     person(given = "Jared", family = "Andrews", role = c("aut"), email = "jared.andrews07@gmail.com"),
+    person(given = "Tobias", family = "Hoch", role = c("ctb"), email = "tobias@hoch.earth"),
     person(given = "Alexei", family = "Martsinkovskiy", role = c("ctb"), email = "alexei.martsinkovskiy@gmail.com")
     )
 Description: A bridging R package to facilitate gene set enrichment analysis (GSEA) in the context of single-cell RNA sequencing. Using raw count information, Seurat objects, or SingleCellExperiment format, users can perform and visualize ssGSEA, GSVA, AUCell, and UCell-based enrichment calculations across individual cells. Alternatively, escape supports use of rank-based GSEA, such as the use of differential gene expression via fgsea.
