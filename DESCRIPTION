@@ -28,6 +28,7 @@ Suggests:
     AUCell,
     BiocParallel,
     BiocStyle,
+    DelayedMatrixStats,
     dplyr,
     fgsea,
     GSEABase,
