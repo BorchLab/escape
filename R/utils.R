@@ -150,6 +150,7 @@
 # -----------------------------------------------------------------------------
 #  EXPRESSION MATRIX EXTRACTOR -------------------------------------------------
 # -----------------------------------------------------------------------------
+#' @importFrom MatrixGenerics rowSums2
 .cntEval <- function(obj, assay = "RNA", type = "counts") {
   if (.is_seurat(obj)) {
     # Use generic accessor if available
@@ -177,9 +178,15 @@
   } else {
     cnts <- obj
   }
+  # Conditionally require DelayedMatrixStats if cnts is dgCMatrix
+  if (inherits(cnts, "dgCMatrix")) {
+    if (!requireNamespace("DelayedMatrixStats", quietly = TRUE)) {
+      stop("Package 'DelayedMatrixStats' is required to handle sparse matrices. Please install it with BiocManager::install('DelayedMatrixStats').")
+    }
+    loadNamespace("DelayedMatrixStats")
+  }
   cnts[MatrixGenerics::rowSums2(cnts) != 0, , drop = FALSE]
 }
-
 
 # -----------------------------------------------------------------------------
 #  ATTACH / PULL ENRICHMENT MATRICES ------------------------------------------
