@@ -1,3 +1,9 @@
+# 2.5.4  (2025-06-05)
+
+## Bug fixes
+* Fix conversion wide-to-long format for ```heatmapEnrichment()```
+* Fix issue with t() call on sparse matrices. 
+
 # 2.5.3  (2025-05-19)
 
 ## Highlights

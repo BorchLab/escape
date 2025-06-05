@@ -185,7 +185,7 @@
     }
     loadNamespace("DelayedMatrixStats")
   }
-  cnts[MatrixGenerics::rowSums2(cnts) != 0, , drop = FALSE]
+  cnts[MatrixGenerics::rowSums2(cnts, na.rm = TRUE) != 0, , drop = FALSE]
 }
 
 # -----------------------------------------------------------------------------
