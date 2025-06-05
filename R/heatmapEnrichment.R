@@ -96,7 +96,7 @@ heatmapEnrichment <- function(input.data,
   # ---------- 4. long format for ggplot (base-R) --------------------------
   long <- data.frame(
     variable = rep(gene.set, each = nrow(agg)),
-    value    = as.vector(t(agg[gene.set])),
+    value    = unlist(agg[gene.set], use.names = FALSE),
     group    = rep(agg[[group.by]], times = length(gene.set)),
     stringsAsFactors = FALSE
   )
