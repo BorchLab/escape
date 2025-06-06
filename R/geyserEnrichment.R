@@ -21,6 +21,10 @@
 #'   *`"group"`* – natural sort of group labels;
 #'   *`NULL`* – keep original ordering.
 #' @param facet.by Optional metadata column used to facet the plot.
+#' @param summarise.by Optional metadata column used to summarise data.
+#' @param summary.stat Optional Method used to summarize expression within each
+#* group defined by summarise.by: one of `"mean"` (default), `"median"`, `"max"`,
+#*`"sum"`, or `"geometric"`
 #' @param scale Logical; if `TRUE` scores are centered/scaled (Z‑score) prior
 #' to plotting.
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
@@ -50,6 +54,8 @@ geyserEnrichment <- function(input.data,
                              order.by  = NULL,
                              scale     = FALSE,
                              facet.by  = NULL,
+                             summarise.by = NULL,
+                             summary.stat   = "mean",
                              palette   = "inferno") {
   ## ---- 0) Sanity checks -----------------------------------------------------
   if (missing(gene.set) || length(gene.set) != 1L)
@@ -61,10 +67,43 @@ geyserEnrichment <- function(input.data,
   if (identical(color.by, "group"))
     color.by <- group.by
   
-  ## ---- 1) Build tidy data.frame -------------------------------------------
-  enriched <- .prepData(input.data, assay, gene.set, group.by,
-                        split.by = NULL, facet.by = facet.by)
+  if (!is.null(summarise.by) && (identical(summarise.by, group.by) || 
+      identical(summarise.by, facet.by)))
+    stop("'summarise.by' cannot be the same as 'group.by' or 'facet.by'. 
+         Please choose a different metadata column.")
   
+  # ---- 1) helper to match summary function -------------------------
+  .match_summary_fun <- function(fun) {
+    if (is.function(fun)) return(fun)
+    if (!is.character(fun) || length(fun) != 1)
+      stop("'summary.stat' must be a single character keyword or a function")
+    kw <- tolower(fun)
+    fn <- switch(kw,
+                 mean      = base::mean,
+                 median    = stats::median,
+                 sum       = base::sum,
+                 sd        = stats::sd,
+                 max       = base::max,
+                 min       = base::min,
+                 geometric = function(x) exp(mean(log(x + 1e-6))),
+                 stop("Unsupported summary keyword: ", fun))
+    fn
+  }
+  summary_fun <- .match_summary_fun(summary.stat)
+  
+  ## ---- 2) Build tidy data.frame -------------------------------------------
+  enriched <- .prepData(input.data, assay, gene.set, group.by,
+                        split.by = summarise.by, facet.by = facet.by)
+  
+  ## Optionally summarise data with **base aggregate()** ----------------------
+  if (!is.null(summarise.by)) {
+    grp_cols   <- c(summarise.by, group.by, facet.by)
+    enriched <- aggregate(enriched[gene.set],
+                          by   = enriched[grp_cols],
+                          FUN  = summary_fun,
+                          SIMPLIFY = FALSE)
+  }
+
   ## Optionally Z‑transform ----------------------------------------------------
   if (scale)
     enriched[[gene.set]] <- as.numeric(scale(enriched[[gene.set]]))
@@ -73,12 +112,17 @@ geyserEnrichment <- function(input.data,
   if (!is.null(order.by))
     enriched <- .orderFunction(enriched, order.by, group.by)
   
-  ## ---- 2) Plot --------------------------------------------------------------
-  plt <- ggplot(enriched, aes(x = .data[[group.by]],
-                              y = .data[[gene.set]],
-                              colour = .data[[color.by]])) +
+  ## ---- 3) Plot --------------------------------------------------------------
+  if (!is.null(color.by))
+    plt <- ggplot(enriched, aes(x = .data[[group.by]],
+                                y = .data[[gene.set]],
+                                colour = .data[[color.by]]))
+  else
+    plt <- ggplot(enriched, aes(x = .data[[group.by]],
+                                y = .data[[gene.set]]))
+
     # Raw points --------------------------------------------------------------
-  geom_jitter(width = 0.25, size = 1.5, alpha = 0.6, na.rm = TRUE) +
+  plt <- plt + geom_jitter(width = 0.25, size = 1.5, alpha = 0.6, na.rm = TRUE) +
     
     # White base interval + median point -------------------------------------
   stat_pointinterval(interval_size_range = c(2, 3), fatten_point = 1.4,
@@ -97,10 +141,11 @@ geyserEnrichment <- function(input.data,
     theme(legend.direction = "horizontal",
           legend.position  = "bottom")
   
-  ## ---- 3) Colour scale ------------------------------------------------------
-  plt <- .colorby(enriched, plt, color.by, palette, type = "color")
+  ## ---- 4) Colour scale ------------------------------------------------------
+  if (!is.null(color.by)) 
+    plt <- .colorby(enriched, plt, color.by, palette, type = "color")
   
-  ## ---- 4) Facetting ---------------------------------------------------------
+  ## ---- 5) Facetting ---------------------------------------------------------
   if (!is.null(facet.by))
     plt <- plt + facet_grid(as.formula(paste(".~", facet.by)))
   
