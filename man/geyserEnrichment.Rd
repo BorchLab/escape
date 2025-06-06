@@ -48,7 +48,9 @@ to plotting.}
 
 \item{summarise.by}{Optional metadata column used to summarise data.}
 
-\item{summary.stat}{Optional Method used to summarize expression within each}
+\item{summary.stat}{Optional method used to summarize expression within each
+group defined by \code{summarise.by}. One of: \code{"mean"} (default),
+\code{"median"}, \code{"max"}, \code{"sum"}, or \code{"geometric"}.}
 
 \item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }

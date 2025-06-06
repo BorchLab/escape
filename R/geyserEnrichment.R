@@ -22,9 +22,9 @@
 #'   *`NULL`* – keep original ordering.
 #' @param facet.by Optional metadata column used to facet the plot.
 #' @param summarise.by Optional metadata column used to summarise data.
-#' @param summary.stat Optional Method used to summarize expression within each
-#* group defined by summarise.by: one of `"mean"` (default), `"median"`, `"max"`,
-#*`"sum"`, or `"geometric"`
+#' @param summary.stat Optional method used to summarize expression within each
+#'   group defined by \code{summarise.by}. One of: \code{"mean"} (default),
+#'   \code{"median"}, \code{"max"}, \code{"sum"}, or \code{"geometric"}.
 #' @param scale Logical; if `TRUE` scores are centered/scaled (Z‑score) prior
 #' to plotting.
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.

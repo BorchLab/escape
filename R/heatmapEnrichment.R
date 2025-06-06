@@ -17,9 +17,9 @@
 #' @param facet.by Optional metadata column used to facet the plot.
 #' @param scale If \code{TRUE}, Z‑transforms each gene‑set column **after**
 #' summarization.
-#' @param summary.stat Method used to summarize expression within each
-#* group: one of `"mean"` (default), `"median"`, `"max"`,
-#*`"sum"`, or `"geometric"`
+#' @param summary.stat Optional method used to summarize expression within each
+#'   group. One of: \code{"mean"} (default), \code{"median"}, \code{"max"}, 
+#'   \code{"sum"}, or \code{"geometric"}.
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'
 #' @return A \code{ggplot2} object.
