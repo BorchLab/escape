@@ -61,7 +61,7 @@ ridgeEnrichment <- function(input.data,
   
   ## ---- 1  build long data.frame ---------------------------------------
   df <- .prepData(input.data, assay, gene.set.use, group.by,
-                  split.by = NULL, facet.by = facet.by)
+                  split.by = NULL, facet.by = facet.by, color.by = color.by)
   
   ## optional scaling (Z-transform per gene-set) -------------------------
   if (scale)

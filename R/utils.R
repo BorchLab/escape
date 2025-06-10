@@ -41,10 +41,10 @@
 #  DATA.frame BUILDERS ---------------------------------------------------------
 # -----------------------------------------------------------------------------
 .makeDFfromSCO <- function(input.data, assay = "escape", gene.set = NULL,
-                           group.by = NULL, split.by = NULL, facet.by = NULL) {
+                           group.by = NULL, split.by = NULL, facet.by = NULL, color.by = NULL) {
   if (is.null(assay))
     stop("Please provide assay name")
-  cols <- unique(c(group.by, split.by, facet.by))
+  cols <- unique(c(group.by, split.by, facet.by, color.by))
   cnts <- .cntEval(input.data, assay = assay, type = "data")
   
   if (length(gene.set) == 1 && gene.set == "all")
@@ -62,18 +62,18 @@
   df
 }
 
-.prepData <- function(input.data, assay, gene.set, group.by, split.by, facet.by) {
+.prepData <- function(input.data, assay, gene.set, group.by, split.by, facet.by, color.by) {
   if (.is_seurat_or_sce(input.data)) {
-    df <- .makeDFfromSCO(input.data, assay, gene.set, group.by, split.by, facet.by)
+    df <- .makeDFfromSCO(input.data, assay, gene.set, group.by, split.by, facet.by, color.by)
     if (identical(gene.set, "all")) {
-      gene.set <- setdiff(colnames(df), c(group.by, split.by, facet.by))
+      gene.set <- setdiff(colnames(df), c(group.by, split.by, facet.by, color.by))
     }
   } else {                               # assume plain data.frame / matrix
     if (identical(gene.set, "all"))
-      gene.set <- setdiff(colnames(input.data), c(group.by, split.by, facet.by))
-    df <- input.data[, c(gene.set, group.by, split.by, facet.by), drop = FALSE]
+      gene.set <- setdiff(colnames(input.data), c(group.by, split.by, facet.by, color.by))
+    df <- input.data[, c(gene.set, group.by, split.by, facet.by, color.by), drop = FALSE]
   }
-  colnames(df) <- c(gene.set, group.by, split.by, facet.by)
+  colnames(df) <- unique(c(gene.set, group.by, split.by, facet.by, color.by))
   df
 }
 

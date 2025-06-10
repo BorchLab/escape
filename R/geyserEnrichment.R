@@ -93,11 +93,11 @@ geyserEnrichment <- function(input.data,
   
   ## ---- 2) Build tidy data.frame -------------------------------------------
   enriched <- .prepData(input.data, assay, gene.set, group.by,
-                        split.by = summarise.by, facet.by = facet.by)
+                        split.by = summarise.by, facet.by = facet.by, color.by = color.by)
   
   ## Optionally summarise data with **base aggregate()** ----------------------
   if (!is.null(summarise.by)) {
-    grp_cols   <- c(summarise.by, group.by, facet.by)
+    grp_cols   <- c(summarise.by, group.by, facet.by, color.by)
     enriched <- aggregate(enriched[gene.set],
                           by   = enriched[grp_cols],
                           FUN  = summary_fun,
@@ -116,10 +116,12 @@ geyserEnrichment <- function(input.data,
   if (!is.null(color.by))
     plt <- ggplot(enriched, aes(x = .data[[group.by]],
                                 y = .data[[gene.set]],
+                                group = .data[[group.by]],
                                 colour = .data[[color.by]]))
   else
     plt <- ggplot(enriched, aes(x = .data[[group.by]],
-                                y = .data[[gene.set]]))
+                                y = .data[[gene.set]]),
+                                group = .data[[group.by]])
 
     # Raw points --------------------------------------------------------------
   plt <- plt + geom_jitter(width = 0.25, size = 1.5, alpha = 0.6, na.rm = TRUE) +

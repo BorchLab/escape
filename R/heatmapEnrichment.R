@@ -70,7 +70,8 @@ heatmapEnrichment <- function(input.data,
   df <- .prepData(input.data, assay, gene.set.use,
                   group.by = group.by,
                   split.by = NULL,
-                  facet.by = facet.by)
+                  facet.by = facet.by, 
+                  color.by = NULL)
   
   # Which columns contain gene-set scores?
   if (identical(gene.set.use, "all"))
