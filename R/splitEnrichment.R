@@ -56,7 +56,8 @@ splitEnrichment <- function(input.data,
   if (is.null(group.by)) group.by <- "ident"
   
   # Prepare tidy data with relevant metadata columns
-  enriched <- .prepData(input.data, assay, gene.set.use, group.by, split.by, facet.by)
+  enriched <- .prepData(input.data, assay, gene.set.use, group.by, split.by, 
+                        facet.by, color.by = NULL)
   
   # Determine the number of levels in the splitting variable
   split.levels <- unique(enriched[[split.by]])

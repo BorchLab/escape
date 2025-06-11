@@ -41,40 +41,80 @@
 #  DATA.frame BUILDERS ---------------------------------------------------------
 # -----------------------------------------------------------------------------
 .makeDFfromSCO <- function(input.data, assay = "escape", gene.set = NULL,
-                           group.by = NULL, split.by = NULL, facet.by = NULL) {
+                           group.by = NULL, split.by = NULL, facet.by = NULL, color.by = NULL) {
   if (is.null(assay))
     stop("Please provide assay name")
-  cols <- unique(c(group.by, split.by, facet.by))
+  
+  # Pull count matrix (features) and metadata
   cnts <- .cntEval(input.data, assay = assay, type = "data")
-  
-  if (length(gene.set) == 1 && gene.set == "all")
-    gene.set <- rownames(cnts)
-  
+  features <- rownames(cnts)
   meta <- .grabMeta(input.data)
-  meta <- meta[, cols, drop = FALSE]
+  meta.cols <- colnames(meta)
   
+  # All potential column-like arguments
+  cols <- unique(c(group.by, split.by, facet.by, color.by))
+  
+  # Check that each is either metadata or a feature
+  bad.cols <- cols[!(cols %in% meta.cols | cols %in% features)]
+  if (length(bad.cols) > 0) {
+    stop("The following variables are not found in either metadata or features: ", paste(bad.cols, collapse = ", "))
+  }
+  
+  # Determine if color.by is a feature or meta
+  is_feature_color <- !is.null(color.by) && color.by %in% features
+  is_meta_color <- !is.null(color.by) && color.by %in% meta.cols
+  
+  # Prepare metadata subset
+  meta <- meta[, intersect(cols, meta.cols), drop = FALSE]
+  
+  # Convert gene.set if "all"
+  if (length(gene.set) == 1 && gene.set == "all") {
+    gene.set <- features
+  }
+  
+  # Build data frame with expression values
   if (length(gene.set) == 1) {
     df <- cbind(value = cnts[gene.set, ], meta)
     colnames(df)[1] <- gene.set
   } else {
     df <- cbind(Matrix::t(cnts[gene.set, , drop = FALSE]), meta)
   }
-  df
+  
+  # Add color.by feature expression if it's a gene but not in gene.set
+  if (is_feature_color && !(color.by %in% gene.set)) {
+    df[[color.by]] <- cnts[color.by, ]
+  }
+  
+  return(df)
 }
 
-.prepData <- function(input.data, assay, gene.set, group.by, split.by, facet.by) {
+
+.prepData <- function(input.data, assay, gene.set, group.by, split.by, facet.by, color.by) {
   if (.is_seurat_or_sce(input.data)) {
-    df <- .makeDFfromSCO(input.data, assay, gene.set, group.by, split.by, facet.by)
+    df <- .makeDFfromSCO(input.data, assay, gene.set, group.by, split.by, facet.by, color.by)
+    
     if (identical(gene.set, "all")) {
-      gene.set <- setdiff(colnames(df), c(group.by, split.by, facet.by))
+      meta_cols <- c(group.by, split.by, facet.by)
+      # Do not remove color.by if it's also a feature
+      non_gene_color <- if (!is.null(color.by) && color.by %in% colnames(df) && !(color.by %in% gene.set)) color.by else NULL
+      gene.set <- setdiff(colnames(df), c(meta_cols, non_gene_color))
     }
-  } else {                               # assume plain data.frame / matrix
-    if (identical(gene.set, "all"))
-      gene.set <- setdiff(colnames(input.data), c(group.by, split.by, facet.by))
-    df <- input.data[, c(gene.set, group.by, split.by, facet.by), drop = FALSE]
+    
+  } else {
+    all.cols <- unique(c(gene.set, group.by, split.by, facet.by, color.by))
+    missing.cols <- setdiff(all.cols, colnames(input.data))
+    if (length(missing.cols) > 0) {
+      stop("The following columns are missing in the input data: ", paste(missing.cols, collapse = ", "))
+    }
+    
+    if (identical(gene.set, "all")) {
+      gene.set <- setdiff(colnames(input.data), c(group.by, split.by, facet.by, color.by))
+    }
+    
+    df <- input.data[, unique(c(gene.set, group.by, split.by, facet.by, color.by)), drop = FALSE]
   }
-  colnames(df) <- c(gene.set, group.by, split.by, facet.by)
-  df
+  
+  return(df)
 }
 
 # -----------------------------------------------------------------------------
@@ -443,4 +483,24 @@ utils::globalVariables(c(
   "gene.set.query", "index"
 ))
 
+# helper to match summary function
+.match_summary_fun <- function(fun) {
+  if (is.function(fun)) return(fun)
+  if (!is.character(fun) || length(fun) != 1)
+    stop("'summary.stat' must be a single character keyword or a function")
+  kw <- tolower(fun)
+  fn <- switch(kw,
+               mean      = base::mean,
+               median    = stats::median,
+               sum       = base::sum,
+               sd        = stats::sd,
+               max       = base::max,
+               min       = base::min,
+               geometric = function(x) exp(mean(log(x + 1e-6))),
+               stop("Unsupported summary keyword: ", fun))
+  
+  # Attach keyword as attribute
+  attr(fn, "keyword") <- kw
+  fn
+}
 

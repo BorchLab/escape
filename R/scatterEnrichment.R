@@ -69,7 +69,8 @@ scatterEnrichment <- function(input.data,
   gene.set <- c(x.axis, y.axis)
   
   ## ---- 1  Assemble long data-frame -----------------------------------------
-  enriched <- .prepData(input.data, assay, gene.set, group.by, NULL, facet.by)
+  enriched <- .prepData(input.data, assay, gene.set, group.by, NULL, facet.by,
+                        color.by = NULL)
   
   if (scale) {
     enriched[, gene.set] <- apply(enriched[, gene.set, drop = FALSE], 2, scale)

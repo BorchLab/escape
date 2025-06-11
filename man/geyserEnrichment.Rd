@@ -13,6 +13,8 @@ geyserEnrichment(
   order.by = NULL,
   scale = FALSE,
   facet.by = NULL,
+  summarise.by = NULL,
+  summary.stat = "mean",
   palette = "inferno"
 )
 }
@@ -43,6 +45,12 @@ accepted.}
 to plotting.}
 
 \item{facet.by}{Optional metadata column used to facet the plot.}
+
+\item{summarise.by}{Optional metadata column used to summarise data.}
+
+\item{summary.stat}{Optional method used to summarize expression within each
+group defined by \code{summarise.by}. One of: \code{"mean"} (default),
+\code{"median"}, \code{"max"}, \code{"sum"}, or \code{"geometric"}.}
 
 \item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }

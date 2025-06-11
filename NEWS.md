@@ -1,3 +1,10 @@
+# 2.5.5  (2025-06-11)
+
+## Bug fix & enhanced functionality
+* Enable ```color.by``` for both metadata columns and features (other gene sets)
+* Introduce ```summarise.by``` argument for ```geyserEnrichment()``` 
+* Enable scaling if color.by is another gene.set. Enable scaling for ```dgCMatrix```
+
 # 2.5.4  (2025-06-05)
 
 ## Bug fixes

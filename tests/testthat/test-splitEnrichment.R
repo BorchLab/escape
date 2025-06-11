@@ -70,7 +70,8 @@ test_that("order.by = 'mean' reorders x-axis levels by descending mean", {
     gene.set   = "Tcells",
     group.by   = "ident",
     split.by   = "groups",
-    facet.by   = NULL
+    facet.by   = NULL,
+    color.by   = NULL
   )
   
   expected <- enr %>%

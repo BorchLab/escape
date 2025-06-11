@@ -38,7 +38,9 @@ are ordered by Ward‑linkage hierarchical clustering (Euclidean distance).}
 \item{scale}{If \code{TRUE}, Z‑transforms each gene‑set column **after**
 summarization.}
 
-\item{summary.stat}{Method used to summarize expression within each}
+\item{summary.stat}{Optional method used to summarize expression within each
+group. One of: \code{"mean"} (default), \code{"median"}, \code{"max"}, 
+\code{"sum"}, or \code{"geometric"}.}
 
 \item{palette}{Character. Any palette from \code{\link[grDevices]{hcl.pals}}.}
 }

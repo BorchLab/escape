@@ -17,9 +17,9 @@
 #' @param facet.by Optional metadata column used to facet the plot.
 #' @param scale If \code{TRUE}, Z‑transforms each gene‑set column **after**
 #' summarization.
-#' @param summary.stat Method used to summarize expression within each
-#* group: one of `"mean"` (default), `"median"`, `"max"`,
-#*`"sum"`, or `"geometric"`
+#' @param summary.stat Optional method used to summarize expression within each
+#'   group. One of: \code{"mean"} (default), \code{"median"}, \code{"max"}, 
+#'   \code{"sum"}, or \code{"geometric"}.
 #' @param palette Character. Any palette from \code{\link[grDevices]{hcl.pals}}.
 #'
 #' @return A \code{ggplot2} object.
@@ -47,22 +47,6 @@ heatmapEnrichment <- function(input.data,
                               palette        = "inferno")
 {
   # ---------- 1. helper to match summary function -------------------------
-  .match_summary_fun <- function(fun) {
-    if (is.function(fun)) return(fun)
-    if (!is.character(fun) || length(fun) != 1)
-      stop("'summary.stat' must be a single character keyword or a function")
-    kw <- tolower(fun)
-    fn <- switch(kw,
-                 mean      = base::mean,
-                 median    = stats::median,
-                 sum       = base::sum,
-                 sd        = stats::sd,
-                 max       = base::max,
-                 min       = base::min,
-                 geometric = function(x) exp(mean(log(x + 1e-6))),
-                 stop("Unsupported summary keyword: ", fun))
-    fn
-  }
   summary_fun <- .match_summary_fun(summary.stat)
   
   # ---------- 2. pull / tidy data -----------------------------------------
@@ -70,7 +54,8 @@ heatmapEnrichment <- function(input.data,
   df <- .prepData(input.data, assay, gene.set.use,
                   group.by = group.by,
                   split.by = NULL,
-                  facet.by = facet.by)
+                  facet.by = facet.by, 
+                  color.by = NULL)
   
   # Which columns contain gene-set scores?
   if (identical(gene.set.use, "all"))
