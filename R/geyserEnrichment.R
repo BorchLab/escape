@@ -79,18 +79,34 @@ geyserEnrichment <- function(input.data,
   enriched <- .prepData(input.data, assay, gene.set, group.by,
                         split.by = summarise.by, facet.by = facet.by, color.by = color.by)
   
+  # Define all grouping variables that must be metadata columns
+  grouping_vars <- unique(c(summarise.by, group.by, facet.by))
+  
+  # Determine if color.by is a feature
+  is_feature_color <- !is.null(color.by) && !(color.by %in% grouping_vars) && (color.by %in% colnames(enriched)) && !(color.by %in% grouping_vars)
+  
   ## Optionally summarise data with **base aggregate()** ----------------------
   if (!is.null(summarise.by)) {
-    grp_cols   <- c(summarise.by, group.by, facet.by, color.by)
-    enriched <- aggregate(enriched[gene.set],
-                          by   = enriched[grp_cols],
-                          FUN  = summary_fun,
-                          SIMPLIFY = FALSE)
+    
+    # Features to summarize = gene.set (+ color.by if it's a feature)
+    summarise_vars <- unique(c(gene.set, if (is_feature_color) color.by))
+    
+    # Perform aggregation
+    enriched <- aggregate(enriched[summarise_vars],
+                          by = enriched[grouping_vars],
+                          FUN = summary_fun,
+                          simplify = TRUE)
   }
-
+  
   ## Optionally Z‑transform ----------------------------------------------------
-  if (scale)
-    enriched[[gene.set]] <- as.numeric(scale(enriched[[gene.set]]))
+  if (scale) {
+    enriched[[gene.set]] <- scale(as.numeric(enriched[[gene.set]]))
+    
+    # Also scale color.by if it's a feature 
+    if (is_feature_color) {
+      enriched[[color.by]] <- scale(enriched[[color.by]])
+    }
+  }
   
   ## Optionally reorder groups -------------------------------------------------
   if (!is.null(order.by))

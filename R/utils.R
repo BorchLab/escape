@@ -44,37 +44,77 @@
                            group.by = NULL, split.by = NULL, facet.by = NULL, color.by = NULL) {
   if (is.null(assay))
     stop("Please provide assay name")
-  cols <- unique(c(group.by, split.by, facet.by, color.by))
+  
+  # Pull count matrix (features) and metadata
   cnts <- .cntEval(input.data, assay = assay, type = "data")
-  
-  if (length(gene.set) == 1 && gene.set == "all")
-    gene.set <- rownames(cnts)
-  
+  features <- rownames(cnts)
   meta <- .grabMeta(input.data)
-  meta <- meta[, cols, drop = FALSE]
+  meta.cols <- colnames(meta)
   
+  # All potential column-like arguments
+  cols <- unique(c(group.by, split.by, facet.by, color.by))
+  
+  # Check that each is either metadata or a feature
+  bad.cols <- cols[!(cols %in% meta.cols | cols %in% features)]
+  if (length(bad.cols) > 0) {
+    stop("The following variables are not found in either metadata or features: ", paste(bad.cols, collapse = ", "))
+  }
+  
+  # Determine if color.by is a feature or meta
+  is_feature_color <- !is.null(color.by) && color.by %in% features
+  is_meta_color <- !is.null(color.by) && color.by %in% meta.cols
+  
+  # Prepare metadata subset
+  meta <- meta[, intersect(cols, meta.cols), drop = FALSE]
+  
+  # Convert gene.set if "all"
+  if (length(gene.set) == 1 && gene.set == "all") {
+    gene.set <- features
+  }
+  
+  # Build data frame with expression values
   if (length(gene.set) == 1) {
     df <- cbind(value = cnts[gene.set, ], meta)
     colnames(df)[1] <- gene.set
   } else {
     df <- cbind(Matrix::t(cnts[gene.set, , drop = FALSE]), meta)
   }
-  df
+  
+  # Add color.by feature expression if it's a gene but not in gene.set
+  if (is_feature_color && !(color.by %in% gene.set)) {
+    df[[color.by]] <- cnts[color.by, ]
+  }
+  
+  return(df)
 }
+
 
 .prepData <- function(input.data, assay, gene.set, group.by, split.by, facet.by, color.by) {
   if (.is_seurat_or_sce(input.data)) {
     df <- .makeDFfromSCO(input.data, assay, gene.set, group.by, split.by, facet.by, color.by)
+    
     if (identical(gene.set, "all")) {
-      gene.set <- setdiff(colnames(df), c(group.by, split.by, facet.by, color.by))
+      meta_cols <- c(group.by, split.by, facet.by)
+      # Do not remove color.by if it's also a feature
+      non_gene_color <- if (!is.null(color.by) && color.by %in% colnames(df) && !(color.by %in% gene.set)) color.by else NULL
+      gene.set <- setdiff(colnames(df), c(meta_cols, non_gene_color))
     }
-  } else {                               # assume plain data.frame / matrix
-    if (identical(gene.set, "all"))
+    
+  } else {
+    all.cols <- unique(c(gene.set, group.by, split.by, facet.by, color.by))
+    missing.cols <- setdiff(all.cols, colnames(input.data))
+    if (length(missing.cols) > 0) {
+      stop("The following columns are missing in the input data: ", paste(missing.cols, collapse = ", "))
+    }
+    
+    if (identical(gene.set, "all")) {
       gene.set <- setdiff(colnames(input.data), c(group.by, split.by, facet.by, color.by))
-    df <- input.data[, c(gene.set, group.by, split.by, facet.by, color.by), drop = FALSE]
+    }
+    
+    df <- input.data[, unique(c(gene.set, group.by, split.by, facet.by, color.by)), drop = FALSE]
   }
-  colnames(df) <- unique(c(gene.set, group.by, split.by, facet.by, color.by))
-  df
+  
+  return(df)
 }
 
 # -----------------------------------------------------------------------------
