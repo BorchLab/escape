@@ -83,13 +83,18 @@ geyserEnrichment <- function(input.data,
   grouping_vars <- unique(c(summarise.by, group.by, facet.by))
   
   # Determine if color.by is a feature
-  is_feature_color <- !is.null(color.by) && !(color.by %in% grouping_vars) && (color.by %in% colnames(enriched)) && !(color.by %in% grouping_vars)
+  all_features <- rownames(.cntEval(input.data, assay = assay, type = "data"))
+  
+  # Determine if color.by is a feature
+  is_feature_color <- !is.null(color.by) &&
+    (color.by %in% all_features)
   
   ## Optionally summarise data with **base aggregate()** ----------------------
   if (!is.null(summarise.by)) {
     
-    # Features to summarize = gene.set (+ color.by if it's a feature)
+    # add color.by to summarise_vars if it is a feautre, otherwise add to grouping_vars
     summarise_vars <- unique(c(gene.set, if (is_feature_color) color.by))
+    grouping_vars <- unique(c(grouping_vars, if (!is_feature_color) color.by))
     
     # Perform aggregation
     enriched <- aggregate(enriched[summarise_vars],
