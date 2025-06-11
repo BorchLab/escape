@@ -443,4 +443,21 @@ utils::globalVariables(c(
   "gene.set.query", "index"
 ))
 
+# helper to match summary function
+.match_summary_fun <- function(fun) {
+  if (is.function(fun)) return(fun)
+  if (!is.character(fun) || length(fun) != 1)
+    stop("'summary.stat' must be a single character keyword or a function")
+  kw <- tolower(fun)
+  fn <- switch(kw,
+               mean      = base::mean,
+               median    = stats::median,
+               sum       = base::sum,
+               sd        = stats::sd,
+               max       = base::max,
+               min       = base::min,
+               geometric = function(x) exp(mean(log(x + 1e-6))),
+               stop("Unsupported summary keyword: ", fun))
+  fn
+}
 
