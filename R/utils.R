@@ -498,6 +498,9 @@ utils::globalVariables(c(
                min       = base::min,
                geometric = function(x) exp(mean(log(x + 1e-6))),
                stop("Unsupported summary keyword: ", fun))
+  
+  # Attach keyword as attribute
+  attr(fn, "keyword") <- kw
   fn
 }
 

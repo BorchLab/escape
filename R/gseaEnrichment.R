@@ -178,7 +178,7 @@ gseaEnrichment <- function(input.data,
     ggplot2::geom_step(linewidth = 0.8) +
     ggplot2::geom_hline(yintercept = 0) + 
     ggplot2::scale_colour_manual(values = cols, name = NULL) +
-    ggplot2::labs(y = "Running Enrichment Score") +
+    ggplot2::labs(y = paste0(gene.set.use, "\nRunning Enrichment Score")) +
     ggplot2::theme_classic() +
     ggplot2::theme(axis.title.x = element_blank(),
                    axis.text.x  = element_blank(),
@@ -194,7 +194,7 @@ gseaEnrichment <- function(input.data,
           axis.text.y  = element_blank(),
           axis.ticks.y = element_blank(),
           panel.border = element_rect(fill = NA, colour = "black", linewidth = 0.5))
-   
-  p_top / p_mid + patchwork::plot_layout(heights = c(3, 0.4))
+  
+  patchwork::wrap_plots(p_top, p_mid, ncol = 1, heights = c(3, 0.4))
 }
 
