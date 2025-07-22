@@ -26,35 +26,34 @@ jobs:
           extra-packages: any::covr
           needs: coverage
 
-      - name: Install remotes package
-        run: Rscript -e 'install.packages("remotes")'
-
-      - name: Add GSVA repo
-        run: Rscript -e 'remotes::install_github("rcastelo/GSVA@c9fb985eb555f06a4195260b902747fe0a1ade9f")'
-
-      - name: Test coverage
+      # This step is corrected to use the right functions
+      - name: Test coverage and generate report
         run: |
-          covr::codecov(
+          # First, calculate the package coverage
+          cov <- covr::package_coverage(
             quiet = FALSE,
             clean = FALSE,
             exclusions = "R/global.R",
             install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
           )
+          # Then, generate the cobertura.xml file from the coverage object
+          covr::to_cobertura(cov, file = "cobertura.xml")
         shell: Rscript {0}
 
-      - uses: codecov/codecov-action@v4
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
         with:
-          fail_ci_if_error: ${{ github.event_name != 'pull_request' && true || false }}
-          file: ./cobertura.xml
-          plugin: noop
-          disable_search: true
+          # A token is required for repositories with protected branches
           token: ${{ secrets.CODECOV_ESCAPE }}
-
+          fail_ci_if_error: ${{ github.event_name != 'pull_request' }}
+          file: ./cobertura.xml
+          disable_search: true
+          
       - name: Show testthat output
         if: always()
         run: |
           ## --------------------------------------------------------------------
-          find '${{ runner.temp }}/package' -name 'testthat.Rout*' -exec cat '{}' \; || true
+          find ${{ runner.temp }}/package -name 'testthat.Rout*' -exec cat '{}' \; || true
         shell: bash
 
       - name: Upload test results
