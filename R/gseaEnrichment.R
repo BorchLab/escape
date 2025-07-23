@@ -151,9 +151,9 @@ gseaEnrichment <- function(input.data,
   labNES <- formatC(nes, digits = digits, format = "f")
   labP   <- ifelse(is.na(pval), "NA",
                    formatC(pval, digits = 2, format = "e"))
-  pretty.grp <- paste0(groups,
+  pretty.grp <- sort(paste0(groups,
                        " (NES = ", labNES,
-                       ", p = ", labP, ")")
+                       ", p = ", labP, ")"))
   
   ## ---- 4.  Data frames for ggplot ------------------------------------------
   running.df <- data.frame(

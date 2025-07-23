@@ -21,7 +21,7 @@ vignette: >
 ---
 
 ```{r, echo=FALSE, results="hide", message=FALSE}
-knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(tidy=FALSE, error=FALSE, message=FALSE, warning=FALSE)
 library(BiocStyle)
 ```
 
@@ -195,7 +195,8 @@ ggplot(data = as.data.frame(enrichment.scores),
       mapping = aes(enrichment.scores[,1], enrichment.scores[,2])) + 
   geom_point() + 
   theme_classic() + 
-  theme(axis.title = element_blank())
+  xlab(colnames(enrichment.scores)[1]) + 
+  ylab(colnames(enrichment.scores)[2]) 
 ```
 
 Multi-core support is for all methods is available through [BiocParallel](https://bioconductor.org/packages/release/bioc/html/BiocParallel.html). To add more cores, use the argument **BPPARAM** to ```escape.matrix()```. Here we will use the ```SnowParam()``` for it's support across platforms and explicitly call 2 workers (or cores).
