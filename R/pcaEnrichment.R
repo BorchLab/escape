@@ -140,9 +140,9 @@ pcaEnrichment <- function(input.data,
       ggplot2::geom_segment(data = loadings,
                             ggplot2::aes(x = 0, y = 0, xend = xend, yend = yend),
                             arrow = ggplot2::arrow(length = grid::unit(0.25, "cm"))) +
-      ggplot2::geom_text(data = loadings,
+      ggplot2::geom_label(data = loadings,
                          ggplot2::aes(x = xend, y = yend, label = names),
-                         size = 2, vjust = 1.1)
+                         size = 2)
   }
   
   g

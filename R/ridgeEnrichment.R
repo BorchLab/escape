@@ -123,7 +123,8 @@ ridgeEnrichment <- function(input.data,
     xlab(paste0(gene.set.use, "\nEnrichment Score")) +
     ggplot2::theme_classic(base_size = 11)
   
-  p <- .colorby(df, p, color.by, palette, type = "fill")
+  p <- .colorby(df, p, color.by, palette, type = "fill") + 
+    guides(fill = "none")
   
   ## facetting ------------------------------------------------------------
   if (!is.null(facet.by))

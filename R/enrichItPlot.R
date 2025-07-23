@@ -68,8 +68,7 @@ enrichItPlot <- function(res,
   if (plot.type == "bar") {                 
     p <- ggplot2::ggplot(res,
                          ggplot2::aes(x = .data[[x.measure]], y = .data$Term)) +
-      ggplot2::geom_col(fill = .colorizer(palette, n = 1), ...) +
-      ggplot2::facet_wrap(~ Database, scales = "free_y") +
+      ggplot2::geom_col(fill = .colorizer(palette, n = 1)) +
       ggplot2::labs(x = x.measure, y = NULL) +
       ggplot2::theme_classic()
     
@@ -80,19 +79,14 @@ enrichItPlot <- function(res,
         hjust = 0, size = 3)
     }
     p <- p + ggplot2::coord_cartesian(clip = "off")
-    return(patchwork::wrap_plots(p))
-  
   ## Dot Plot  
   } else if (plot.type == "dot") {         
-    if (!requireNamespace("patchwork", quietly = TRUE))
-      stop("Install 'patchwork' for facetted output.")
     
     p <- ggplot2::ggplot(res,
                          ggplot2::aes(x = .data$geneRatio, y = .data$Term,
                                       color = .data[[color.measure]],
                                       size   = .data$size*.data$geneRatio)) +
       ggplot2::geom_point(...) +
-      ggplot2::facet_wrap(~ Database, scales = "free_y") +
       ggplot2::scale_size_continuous(name = "Core Count") +
       ggplot2::labs(x = "geneRatio", y = NULL,
                     color = color.measure) +
@@ -101,8 +95,6 @@ enrichItPlot <- function(res,
     
     if (!is.null(palette))
       p <- p + ggplot2::scale_color_gradientn(colors = .colorizer(palette, 11))
-    return(patchwork::wrap_plots(p))
-  
   # Network Plot
   } else {                                  
     if (!requireNamespace("ggraph", quietly = TRUE))
@@ -126,7 +118,7 @@ enrichItPlot <- function(res,
     igraph::V(g)$type <- ifelse(igraph::V(g)$name %in% res$pathway, "pathway", "gene")
     igraph::V(g)$size <- ifelse(igraph::V(g)$type == "pathway", 8, 3)
     
-    ggraph::ggraph(g, layout = "fr") +
+    p <- ggraph::ggraph(g, layout = "fr") +
       ggraph::geom_edge_link(aes(alpha = after_stat(index)), show.legend = FALSE) +
       ggraph::geom_node_point(aes(size = .data$size,
                                   color = .data$type)) +
@@ -135,5 +127,8 @@ enrichItPlot <- function(res,
                              vjust = 1.5, check_overlap = TRUE) +
       ggplot2::scale_color_manual(values = .colorizer(palette, n = 2)) +
       ggplot2::theme_void()
+    
+    
   }
+  return(p)
 }
