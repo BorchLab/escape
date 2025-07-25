@@ -1,10 +1,5 @@
 # -----------------------------------------------------------------------------
-#  FAST NEGATION OPERATOR ------------------------------------------------------
-# -----------------------------------------------------------------------------
-`%!in%` <- Negate(`%in%`)     
-
-# -----------------------------------------------------------------------------
-#  CLASS HELPERS ---------------------------------------------------------------
+#  CLASS HELPERS 
 # -----------------------------------------------------------------------------
 .is_seurat      <- function(x) inherits(x, "Seurat")
 .is_sce         <- function(x) inherits(x, "SummarizedExperiment")
@@ -16,7 +11,7 @@
 }
 
 # -----------------------------------------------------------------------------
-#  ORDERING UTILITY (base R implementation) -----------------------------------
+#  ORDERING UTILITY 
 # -----------------------------------------------------------------------------
 .orderFunction <- function(dat, order.by, group.by) {
   if (!(order.by %in% c("mean", "group.by")))
@@ -37,8 +32,26 @@
   dat
 }
 
+.alphanumericalSort <- function(x, ignore.case = TRUE) {
+  if (!is.character(x)) {
+    message("Input 'x' is not a character vector. Attempting to convert.")
+    x <- as.character(x)
+  }
+  unique_elements <- unique(x)
+  alpha_part <- gsub("[0-9]+", "", unique_elements, perl = TRUE)
+  if (ignore.case) {
+    alpha_part <- tolower(alpha_part)
+  }
+  numeric_part <- suppressWarnings(as.numeric(gsub("[^0-9]", "", unique_elements)))
+  sorted_levels <- unique_elements[
+    order(alpha_part, numeric_part)
+  ]
+  
+  return(sorted_levels)
+}
+
 # -----------------------------------------------------------------------------
-#  DATA.frame BUILDERS ---------------------------------------------------------
+#  DATA.frame BUILDERS 
 # -----------------------------------------------------------------------------
 .makeDFfromSCO <- function(input.data, assay = "escape", gene.set = NULL,
                            group.by = NULL, split.by = NULL, facet.by = NULL, color.by = NULL) {
@@ -118,7 +131,7 @@
 }
 
 # -----------------------------------------------------------------------------
-#  COLOUR SCALES (ggplot helper; tidy‑agnostic) --------------------------------
+#  COLOUR SCALES 
 # -----------------------------------------------------------------------------
 .colorizer <- function(palette = "inferno", n = NULL) {
   grDevices::hcl.colors(n = n, palette = palette, fixup = TRUE)
@@ -169,7 +182,7 @@
 }
 
 # -----------------------------------------------------------------------------
-#  MATRIX / VECTOR SPLITTERS ---------------------------------------------------
+#  MATRIX / VECTOR SPLITTERS
 # -----------------------------------------------------------------------------
 .split_cols <- function(mat, chunk) {
   if (ncol(mat) <= chunk) return(list(mat))
@@ -188,7 +201,7 @@
 }
 
 # -----------------------------------------------------------------------------
-#  EXPRESSION MATRIX EXTRACTOR -------------------------------------------------
+#  EXPRESSION MATRIX EXTRACTOR 
 # -----------------------------------------------------------------------------
 #' @importFrom MatrixGenerics rowSums2
 .cntEval <- function(obj, assay = "RNA", type = "counts") {
@@ -229,7 +242,7 @@
 }
 
 # -----------------------------------------------------------------------------
-#  ATTACH / PULL ENRICHMENT MATRICES ------------------------------------------
+#  ATTACH / PULL ENRICHMENT MATRICES 
 # -----------------------------------------------------------------------------
 .adding.Enrich <- function(sc, enrichment, name) {
   if (.is_seurat(sc)) {
@@ -284,7 +297,7 @@
 }
 
 # -----------------------------------------------------------------------------
-#  GENE‑SET / META HELPERS -----------------------------------------------------
+#  GENE‑SET / META HELPERS 
 # -----------------------------------------------------------------------------
 .GS.check <- function(gene.sets) {
   if (is.null(gene.sets))
@@ -311,7 +324,7 @@
     rownames(out) <- rownames(cd)
     
     # Ensure 'ident' column exists
-    if ("ident" %!in% colnames(out)) {
+    if (!"ident" %in% colnames(out)) {
       out$ident <- NA
     }
   } else {

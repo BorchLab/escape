@@ -1,15 +1,6 @@
 # test script for utils.R - testcases are NOT comprehensive!
 
 ## --------------------------------------------------------------------- ##
-##  1. Fast negation operator                                            ##
-## --------------------------------------------------------------------- ##
-test_that("%!in% negates %in% correctly", {
-  x <- 1:5
-  y <- 3:7
-  expect_identical(x %!in% y, !(x %in% y))
-})
-
-## --------------------------------------------------------------------- ##
 ##  2. Class helpers & .checkSingleObject                                ##
 ## --------------------------------------------------------------------- ##
 test_that("class helpers recognise Seurat / SCE", {

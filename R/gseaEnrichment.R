@@ -151,7 +151,7 @@ gseaEnrichment <- function(input.data,
   labNES <- formatC(nes, digits = digits, format = "f")
   labP   <- ifelse(is.na(pval), "NA",
                    formatC(pval, digits = 2, format = "e"))
-  pretty.grp <- sort(paste0(groups,
+  pretty.grp <- .alphanumericalSort(paste0(groups,
                        " (NES = ", labNES,
                        ", p = ", labP, ")"))
   
