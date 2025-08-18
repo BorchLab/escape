@@ -8,7 +8,7 @@
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://ncborcherding.github.io/vignettes/escape_vignette.html)
 <!-- badges: end -->
 
-<img align="right" src="https://github.com/BorchLab/escape/blob/master/www/escape_hex.png" width="352" height="352">
+<img align="right" src="https://github.com/BorchLab/escape/blob/master/www/escape_hex.png" width="305" height="352">
 
 ### Introduction
 Single-cell sequencing (SCS) is a fundamental technology in investigating a diverse array of biological fields. Part of the struggle with the high-resolution approach of SCS, is distilling the data down to meaningful scientific hypotheses. *escape* was created to bridge SCS results, either from raw counts or from popular R-based single-cell pipelines, like [Seurat](https://satijalab.org/seurat/) or [SingleCellExperiment](https://bioconductor.org/books/release/OSCA/book-contents.html#basics), with gene set enrichment analyses (GSEA). The *escape* package allows users to easily incorporate multiple methods of GSEA and offers several visualization and analysis methods. The package accesses the entire [Molecular Signature Database v7.0](https://www.gsea-msigdb.org/gsea/msigdb/search.jsp) and enables users to select single, multiple gene sets, and even libraries to perform enrichment analysis on. 
