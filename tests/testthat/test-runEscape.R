@@ -8,15 +8,17 @@ mini_gs <- list(
 pbmc_small  <- SeuratObject::pbmc_small
 
 get_score <- function(method = "ssGSEA", ...) {
-  escape.matrix(pbmc_small,
-                gene.sets      = mini_gs,
-                method         = method,
-                groups         = 200,  # small chunk for speed
-                min.size       = 0,
-                normalize      = FALSE,
-                make.positive  = FALSE,
-                min.filter.by  = NULL,
-                BPPARAM        = BiocParallel::SerialParam())
+  defaults <- list(input.data     = pbmc_small,
+                   gene.sets      = mini_gs,
+                   method         = method,
+                   groups         = 200,  # small chunk for speed
+                   min.size       = 0,
+                   normalize      = FALSE,
+                   make.positive  = FALSE,
+                   min.filter.by  = NULL,
+                   BPPARAM        = BiocParallel::SerialParam())
+  # `...` must actually reach escape.matrix(), and must win over the defaults
+  do.call(escape.matrix, utils::modifyList(defaults, list(...)))
 }
 
 # ------------------------------------------------------------- interface -----
@@ -50,10 +52,15 @@ test_that("gene-sets failing min.size are dropped with message", {
 # --------------------------------------------------- min.expr.cells (global) -
 test_that("min.expr.cells filters genes globally", {
   sc0 <- get_score(min.expr.cells = 0)
-  sc5 <- get_score(min.expr.cells = 0.5)   # keep genes in >= 50% of cells
-  expect_true(is.matrix(sc5) && is.matrix(sc0))
-  # dimension equality (gene filter should not affect cell × set shape)
-  expect_equal(dim(sc0), dim(sc5))
+  sc2 <- get_score(min.expr.cells = 0.2)   # keep genes in >= 20% of cells
+  expect_true(is.matrix(sc0) && is.matrix(sc2))
+  # the gene filter must not change the cell x gene-set shape ...
+  expect_equal(dim(sc0), dim(sc2))
+  # ... but it must actually change the scores, or it is doing nothing
+  expect_false(isTRUE(all.equal(unname(sc0), unname(sc2))))
+
+  # pushing the threshold past every set member is an error, not silence
+  expect_error(get_score(min.expr.cells = 0.5), "could be matched")
 })
 
 # --------------------------------------------------------- chunk invariance --
