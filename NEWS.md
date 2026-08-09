@@ -1,3 +1,26 @@
+# 2.9.1
+
+## NEW FEATURES
+* **`plaid` backend**: `escape.matrix()` and `runEscape()` gain `backend = c("native", "plaid")`. Setting `backend = "plaid"` routes `ssGSEA`, `GSVA`, `UCell`, and `AUCell` to the `replaid.*` family for large speed and memory gains. `plaid` is a `Suggests`, so the native path is unaffected if it is not installed. **These are approximations, and the gap is wider than the plaid documentation suggests** — measured pooled Pearson agreement with the native scores was roughly 0.85 (ssGSEA), 0.83 (UCell, AUCell) and 0.73 (GSVA) on a 2000-gene simulation, and lower on narrower matrices. See `?escape.matrix` and the vignette before substituting one backend for the other.
+* **Three new methods**: `method = "PLAID"`, `"singscore"`, and `"scSE"`. These have no native implementation and select the `plaid` backend automatically.
+* **`backend.args`**: a named list carrying method-specific tuning (`alpha`, `tau`, `rowtf`, `aucMaxRank`, `rmax`, `nsmooth`, `stats`, `chunk`, `removeLog2`, `scoreMean`). Names are validated against the target function, so typos error instead of being silently swallowed. Note `backend.args$normalize` is `plaid`'s median normalization of the scores and is unrelated to escape's `normalize`.
+* **`input.assay`**: choose which expression matrix to score. `"auto"` (default) keeps raw counts for the native backend and picks log-normalized values for `plaid`. `"counts"` and `"logcounts"` map to the correct layer for both Seurat and `SummarizedExperiment`-derived objects.
+* **`SpatialExperiment` support** is now explicit and tested, including `spatialCoords()`, `imgData()`, and `sample_id` preservation through `runEscape()`.
+* Enrichment scores carry an `escape.backend` attribute recording the engine, method, and `plaid` version; `runEscape()` stores the same record in `metadata()` (SCE) or `Misc()` (Seurat).
+
+## BUG FIXES
+* **`escape.matrix(normalize = TRUE)` failed on every `SummarizedExperiment`-derived input** with `unable to find an inherited method for function 'assay' for signature 'x = "NULL"'`. `.pull.Enrich()` used `altExp(sc)[[name]]`, which indexes the `colData` of the *first* altExp rather than selecting the named one, and returned `NULL`. Now uses `altExp(sc, name)`. This also fixes `performNormalization()` and `performPCA()` on `SingleCellExperiment` and `SpatialExperiment` objects. Reported by Cathal King, who also provided the Xenium test data.
+* **Underscored gene-set names were silently dropped during normalization.** `performNormalization()` rewrote every `_` to `-` to match Seurat's feature-name coercion, which meant `HALLMARK_*`, `GO_*`, and `REACTOME_*` sets matched nothing for matrix, `SingleCellExperiment`, or `SpatialExperiment` input. Matching is now literal first with the Seurat-mangled form as a fallback, and per-set scale factors are aligned to the enrichment columns explicitly so a partial match can never divide the wrong column.
+* Requesting an assay that does not exist now reports what was asked for and what is available, instead of failing with an S4 dispatch error.
+* `performNormalization()` gives a supplied `enrichment.data` precedence over scores stored on the object, and warns when both are present.
+* `%||%` was used but never defined; it only exists in base R >= 4.4 while the package declares R >= 4.1.
+* `runEscape()` now calls `escape.matrix()` with named rather than positional arguments.
+
+## ENHANCEMENTS
+* Removed duplicate internal definitions of `.split_cols()`, `.match_summary_fun()`, and `.filter_genes()`.
+* `escape.matrix()` validates `method` up front rather than failing inside the scoring switch.
+* Test suite: added a toy `SpatialExperiment` fixture built at run time (no new package data), regression coverage for all three bug fixes, and `plaid` dispatch tests that run whether or not `plaid` is installed.
+
 # 2.7.3
 
 ## BUG FIXES

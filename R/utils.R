@@ -10,6 +10,20 @@
     stop("Expecting a Seurat or SummarizedExperiment object")
 }
 
+# `base::%||%` only exists in R >= 4.4.0 and escape declares R (>= 4.1).
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
+# Single error message for every "you asked for an assay that isn't there" case,
+# so a missing name never reaches assay() as NULL.
+.stop_missing_assay <- function(requested, available,
+                                what = "assay", where = "the object") {
+  stop("Could not find ", what, " '", requested, "' in ", where, ". ",
+       if (length(available))
+         paste0("Available: ", paste(available, collapse = ", "), ".")
+       else "No assays are present.",
+       call. = FALSE)
+}
+
 # -----------------------------------------------------------------------------
 #  ORDERING UTILITY 
 # -----------------------------------------------------------------------------
@@ -201,6 +215,68 @@
 }
 
 # -----------------------------------------------------------------------------
+#  INPUT ASSAY RESOLUTION
+# -----------------------------------------------------------------------------
+# Translate the user-facing `input.assay` into the layer (Seurat) or main assay
+# (SummarizedExperiment) name that .cntEval() should read.
+#
+#   "auto"       counts for the native backend, logcounts for plaid
+#   "counts"     Seurat layer "counts"  / SCE assay "counts"
+#   "logcounts"  Seurat layer "data"    / SCE assay "logcounts"
+#   <other>      taken literally
+.resolve_input_assay <- function(obj, input.assay = "auto",
+                                 backend = "native") {
+  if (!is.character(input.assay) || length(input.assay) != 1L)
+    stop("`input.assay` must be a single string.", call. = FALSE)
+
+  ia <- if (identical(input.assay, "auto")) {
+    if (identical(backend, "plaid")) "logcounts" else "counts"
+  } else {
+    input.assay
+  }
+
+  type <- if (.is_seurat(obj)) {
+    switch(ia, counts = "counts", logcounts = "data", data = "data", ia)
+  } else {
+    ia
+  }
+
+  .assert_input_assay(obj, type, ia)
+  type
+}
+
+.assert_input_assay <- function(obj, type, requested) {
+  if (.is_seurat(obj)) {
+    if (!requireNamespace("SeuratObject", quietly = TRUE)) return(invisible(TRUE))
+    lay <- tryCatch(SeuratObject::Layers(obj, assay = "RNA"),
+                    error = function(e) character())
+    # Seurat v5 split objects expose "data.1", "data.2", ... rather than "data"
+    ok <- length(lay) == 0L ||
+      any(lay == type | startsWith(lay, paste0(type, ".")))
+    if (!ok)
+      stop("input.assay = \"", requested, "\" needs layer '", type,
+           "' in the 'RNA' assay, which has: ", paste(lay, collapse = ", "),
+           ".\n  Run Seurat::NormalizeData() (and Seurat::JoinLayers() if the ",
+           "object is split), or set input.assay = \"counts\".", call. = FALSE)
+
+  } else if (.is_sce(obj)) {
+    if (!requireNamespace("SummarizedExperiment", quietly = TRUE))
+      return(invisible(TRUE))
+    an <- SummarizedExperiment::assayNames(obj)
+    if (!type %in% an)
+      stop("input.assay = \"", requested, "\" needs assay '", type,
+           "', which is not present. Available: ", paste(an, collapse = ", "),
+           ".\n  Run scuttle::logNormCounts(), or set input.assay = \"counts\".",
+           call. = FALSE)
+
+  } else if (identical(type, "logcounts")) {
+    message("`input.data` is a bare matrix; escape assumes it is already ",
+            "log-normalized (input.assay = \"logcounts\").")
+  }
+  invisible(TRUE)
+}
+
+# -----------------------------------------------------------------------------
 #  EXPRESSION MATRIX EXTRACTOR
 # -----------------------------------------------------------------------------
 #' @importFrom MatrixGenerics rowSums2
@@ -223,12 +299,21 @@
   } else if (.is_sce(obj)) {
     if (requireNamespace("SummarizedExperiment", quietly = TRUE) &&
         requireNamespace("SingleCellExperiment", quietly = TRUE)) {
-      pos <- if (assay == "RNA") "counts" else assay
-
       cnts <- if (assay == "RNA") {
-        SummarizedExperiment::assay(obj, pos)
+        ## `assay = "RNA"` means "the main expression assay"; `type` names it.
+        ## Every in-package caller passes type = "counts", so this is inert
+        ## unless a caller deliberately asks for logcounts.
+        avail <- SummarizedExperiment::assayNames(obj)
+        if (!type %in% avail)
+          .stop_missing_assay(type, avail, "assay",
+                              "the SummarizedExperiment")
+        SummarizedExperiment::assay(obj, type)
       } else {
-        SummarizedExperiment::assay(SingleCellExperiment::altExp(obj, pos))
+        avail <- SingleCellExperiment::altExpNames(obj)
+        if (!assay %in% avail)
+          .stop_missing_assay(assay, avail, "altExp",
+                              "the SingleCellExperiment")
+        SummarizedExperiment::assay(SingleCellExperiment::altExp(obj, assay))
       }
     } else {
       stop("SummarizedExperiment and SingleCellExperiment packages are required but not installed.")
@@ -281,8 +366,15 @@
 }
 
 .pull.Enrich <- function(sc, name) {
+  if (is.null(name) || !is.character(name) || length(name) != 1L)
+    stop("`assay` must be a single enrichment assay name.", call. = FALSE)
+
   if (.is_seurat(sc)) {
     if (requireNamespace("Matrix", quietly = TRUE)) {
+      avail <- SeuratObject::Assays(sc)
+      if (!name %in% avail)
+        .stop_missing_assay(name, avail, "enrichment assay",
+                            "the Seurat object")
       so_version <- utils::packageVersion("SeuratObject")
       if (so_version >= "5.0.0") {
         Matrix::t(SeuratObject::GetAssayData(sc, assay = name, layer = "data"))
@@ -292,15 +384,22 @@
     } else {
       stop("Matrix package is required to transpose Seurat assay data.")
     }
-    
+
   } else if (.is_sce(sc)) {
     if (requireNamespace("SummarizedExperiment", quietly = TRUE) &&
         requireNamespace("SingleCellExperiment", quietly = TRUE)) {
-      Matrix::t(SummarizedExperiment::assay(SingleCellExperiment::altExp(sc)[[name]]))
+      avail <- SingleCellExperiment::altExpNames(sc)
+      if (!name %in% avail)
+        .stop_missing_assay(name, avail, "enrichment altExp",
+                            "the SingleCellExperiment")
+      # altExp(sc, name), not altExp(sc)[[name]] - the latter indexes colData of
+      # the *first* altExp and silently returns NULL.
+      Matrix::t(SummarizedExperiment::assay(
+        SingleCellExperiment::altExp(sc, name)))
     } else {
       stop("SummarizedExperiment and SingleCellExperiment packages are required to pull enrichment from SCE object.")
     }
-    
+
   } else {
     stop("Unsupported object type for pulling enrichment.")
   }
@@ -315,6 +414,43 @@
   if (inherits(gene.sets, "GeneSetCollection"))
     return(GSEABase::geneIds(gene.sets))
   gene.sets
+}
+
+# Align a gene-set list to the columns of an enrichment matrix.
+#
+# Seurat coerces underscores in feature names to hyphens when an assay is built,
+# so scores pulled back off a Seurat object have mangled column names while
+# scores held as a plain matrix (or in an SCE altExp) keep the originals. Match
+# the literal names first and fall back to the mangled form only for the columns
+# that are still unmatched - mangling unconditionally silently drops every
+# HALLMARK_/GO_/REACTOME_ set for non-Seurat input.
+#
+# Returns the sets re-keyed and re-ordered to `cols`, one per column.
+.match_sets_to_cols <- function(gene.sets, cols) {
+  nm <- names(gene.sets)
+  if (is.null(nm))
+    stop("`gene.sets` must be a named list.", call. = FALSE)
+  if (is.null(cols))
+    stop("Enrichment matrix has no column names; cannot match gene sets.",
+         call. = FALSE)
+
+  idx  <- match(cols, nm)
+  miss <- is.na(idx)
+  if (any(miss))
+    idx[miss] <- match(cols[miss], gsub("_", "-", nm, fixed = TRUE))
+
+  if (all(is.na(idx)))
+    stop("None of the supplied gene sets match enrichment columns.",
+         call. = FALSE)
+  if (anyNA(idx))
+    stop("No gene set supplied for enrichment column(s): ",
+         paste(cols[is.na(idx)], collapse = ", "),
+         ". Supply the same `gene.sets` used to compute the scores.",
+         call. = FALSE)
+
+  out <- gene.sets[idx]
+  names(out) <- cols
+  out
 }
 
 .grabMeta <- function(sc) {
@@ -431,31 +567,6 @@
          },
          stop("Unknown method: ", method, call. = FALSE)
   )
-}
-
-#─ Split a matrix into equal-sized column chunks ------------------------------
-.split_cols <- function(mat, chunk) {
-  if (ncol(mat) <= chunk) return(list(mat))
-  idx <- split(seq_len(ncol(mat)), ceiling(seq_len(ncol(mat)) / chunk))
-  lapply(idx, function(i) mat[, i, drop = FALSE])
-}
-
-.match_summary_fun <- function(fun) {
-  if (is.function(fun)) return(fun)
-  
-  if (!is.character(fun) || length(fun) != 1L)
-    stop("'summary.fun' must be a single character or a function")
-  
-  kw <- tolower(fun)
-  fn <- switch(kw,
-               mean      = base::mean,
-               median    = stats::median,
-               max       = base::max,
-               sum       = base::sum,
-               geometric = function(x) exp(mean(log(x + 1e-6))),
-               stop("Unsupported summary keyword: ", fun))
-  attr(fn, "keyword") <- kw               # tag for fast matrixStats branch
-  fn
 }
 
 .computeRunningES <- function(gene.order, hits, weight = NULL) {

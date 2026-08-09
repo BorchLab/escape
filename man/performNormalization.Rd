@@ -17,15 +17,19 @@ performNormalization(
 \arguments{
 \item{input.data}{A raw-counts matrix (genes x cells), a
 \link[SeuratObject]{Seurat} object, or a
-\link[SingleCellExperiment]{SingleCellExperiment}. Gene identifiers must
+\link[SingleCellExperiment]{SingleCellExperiment} (including a
+\link[SpatialExperiment]{SpatialExperiment}). Gene identifiers must
 match those in \code{gene.sets}.}
 
 \item{enrichment.data}{Matrix. Output of \code{\link{escape.matrix}} or
-\code{NULL} if enrichment scores are already stored in \code{input.data}.}
+\code{NULL} if enrichment scores are already stored in \code{input.data}.
+When supplied it takes precedence over anything stored in
+\code{input.data}.}
 
 \item{assay}{Character. Name of the assay holding enrichment scores when
 \code{input.data} is a single-cell object. Default is \code{"escape"}.
-Ignored otherwise.}
+Ignored when \code{input.data} is a matrix. Set to \code{NULL} to return
+the normalized matrix rather than attaching it to the object.}
 
 \item{gene.sets}{A named list of character vectors, the result of
 \code{\link{getGeneSets}}, or the built-in data object
@@ -44,8 +48,9 @@ Larger values reduce overhead but increase memory usage. Default is
 \code{NULL} (process all cells at once).}
 }
 \value{
-If `input.data` is an object, the same object with a new assay
-        "<assay>_normalized". Otherwise a matrix of normalized scores.
+If `input.data` is an object and `assay` is not `NULL`, the same
+        object with a new assay "<assay>_normalized". Otherwise a matrix of
+        normalized scores.
 }
 \description{
 Scales each enrichment value by the \strong{number of genes from the set
@@ -53,6 +58,15 @@ that are expressed} in that cell (non-zero counts). Optionally shifts
 results into a positive range and/or applies a natural-log transform for
 compatibility with log-based differential tests.
 }
+\section{Which expression values are used}{
+
+The per-cell scale factor is the number of genes from each set with a
+\strong{non-zero raw count}, so this function always reads the \code{counts}
+assay regardless of any \code{input.assay} used when the scores were
+computed. Detection is identical in count and log space, so this is
+deliberate rather than an oversight.
+}
+
 \examples{
 gs <- list(Bcells = c("MS4A1", "CD79B", "CD79A", "IGH1", "IGH2"),
            Tcells = c("CD3E", "CD3D", "CD3G", "CD7","CD8A"))

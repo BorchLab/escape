@@ -107,6 +107,100 @@ test_that("error handling works", {
     ),
     "None of the supplied gene sets match"
   )
+
+  # a gene set for only some of the columns must not silently misalign
+  expect_error(
+    performNormalization(
+      input.data      = toy_counts,
+      enrichment.data = toy_enrich,
+      gene.sets       = list(Set1 = c("g1", "g2"))
+    ),
+    "No gene set supplied for enrichment column"
+  )
+})
+
+# --------------------------------------------------------------------------
+# Underscored set names (HALLMARK_*, GO_*, REACTOME_*) used to be mangled to
+# hyphens unconditionally, which dropped every such set for non-Seurat input.
+under_sets <- list(HALLMARK_SET_ONE = c("g1", "g2"),
+                   Set2             = c("g2", "g3"))
+under_enrich <- toy_enrich
+colnames(under_enrich) <- names(under_sets)
+
+test_that("underscored gene-set names normalize on matrix input", {
+  norm <- performNormalization(
+    input.data      = toy_counts,
+    enrichment.data = under_enrich,
+    gene.sets       = under_sets
+  )
+  expect_equal(dim(norm), dim(under_enrich))
+  expect_equal(colnames(norm), names(under_sets))
+  expect_true(all(is.finite(norm)))
+
+  gs_counts_c1 <- c(
+    sum(toy_counts[c("g1", "g2"), "c1"] != 0),
+    sum(toy_counts[c("g2", "g3"), "c1"] != 0)
+  )
+  manual <- log1p(under_enrich["c1", ] / gs_counts_c1 + 1e-6)
+  expect_equal(unname(norm["c1", ]), unname(manual))
+})
+
+test_that("underscored names give identical scores across input classes", {
+  skip_if_not_installed("SingleCellExperiment")
+  sce <- make_toy_sce()
+  gs  <- toy_spe_sets()   # HALLMARK_SET_A + SetB
+  mat <- as.matrix(SummarizedExperiment::assay(sce, "counts"))
+
+  f <- function(x) escape.matrix(x, gene.sets = gs, method = "UCell",
+                                 normalize = TRUE, min.size = NULL)
+
+  from_sce <- f(sce)
+  from_mat <- f(mat)
+  expect_equal(from_sce, from_mat, tolerance = 1e-10)
+  expect_equal(colnames(from_sce), names(gs))
+})
+
+# --------------------------------------------------------------------------
+test_that("supplied enrichment.data wins over scores held on the object", {
+  skip_if_not_installed("SingleCellExperiment")
+  sce <- make_toy_sce()
+  gs  <- toy_spe_sets()
+  obj <- runEscape(sce, gene.sets = gs, method = "UCell", min.size = NULL)
+
+  # a matrix that is deliberately nothing like the stored scores
+  fake <- matrix(1, nrow = ncol(sce), ncol = length(gs),
+                 dimnames = list(colnames(sce), names(gs)))
+
+  expect_warning(
+    out <- performNormalization(obj, enrichment.data = fake,
+                                assay = "escape", gene.sets = gs),
+    "using `enrichment.data`"
+  )
+
+  from_fake <- performNormalization(SummarizedExperiment::assay(sce, "counts"),
+                                    enrichment.data = fake, gene.sets = gs)
+  expect_equal(
+    Matrix::t(SummarizedExperiment::assay(
+      SingleCellExperiment::altExp(out, "escape_normalized"))),
+    from_fake,
+    tolerance = 1e-10, ignore_attr = TRUE
+  )
+})
+
+test_that("a nonexistent enrichment assay names what is available", {
+  skip_if_not_installed("SingleCellExperiment")
+  sce <- make_toy_sce()
+  gs  <- toy_spe_sets()
+  obj <- runEscape(sce, gene.sets = gs, method = "UCell", min.size = NULL)
+
+  expect_error(
+    performNormalization(obj, assay = "not_there", gene.sets = gs),
+    "Could not find enrichment assay 'not_there'"
+  )
+  expect_error(
+    performNormalization(obj, assay = "not_there", gene.sets = gs),
+    "Available: escape"
+  )
 })
 
 

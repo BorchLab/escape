@@ -1,17 +1,17 @@
 Package: escape
-Title: Easy single cell analysis platform for enrichment
-Version: 2.7.3
+Title: Easy single-cell analysis platform for enrichment
+Version: 2.9.1
 Authors@R: c(
     person(given = "Nick", family = "Borcherding", role = c("aut", "cre"), email = "ncborch@gmail.com"),
     person(given = "Jared", family = "Andrews", role = c("aut"), email = "jared.andrews07@gmail.com"),
     person(given = "Tobias", family = "Hoch", role = c("ctb"), email = "tobias@hoch.earth"),
-    person(given = "Alexei", family = "Martsinkovskiy", role = c("ctb"), email = "alexei.martsinkovskiy@gmail.com")
+    person(given = "Alexei", family = "Martsinkovskiy", role = c("ctb"), email = "alexei.martsinkovskiy@gmail.com"),
+    person(given = "Cathal", family = "King", role = c("ctb"))
     )
-Description: A bridging R package to facilitate gene set enrichment analysis (GSEA) in the context of single-cell RNA sequencing. Using raw count information, Seurat objects, or SingleCellExperiment format, users can perform and visualize ssGSEA, GSVA, AUCell, and UCell-based enrichment calculations across individual cells. Alternatively, escape supports use of rank-based GSEA, such as the use of differential gene expression via fgsea.
+Description: A bridging R package to facilitate gene set enrichment analysis (GSEA) in the context of single-cell RNA sequencing. Using raw count information, Seurat objects, SingleCellExperiment or SpatialExperiment format, users can perform and visualize ssGSEA, GSVA, AUCell, and UCell-based enrichment calculations across individual cells. An optional plaid backend provides fast reimplementations of these methods plus PLAID, singscore, and scSE scoring. Alternatively, escape supports use of rank-based GSEA, such as the use of differential gene expression via fgsea.
 License: MIT + file LICENSE 
 Encoding: UTF-8
 LazyData: false
-RoxygenNote: 7.3.3
 biocViews: Software, SingleCell, Classification, Annotation, GeneSetEnrichment, Sequencing, GeneSignaling, Pathways
 Depends: R (>= 4.1)
 Imports:
@@ -42,12 +42,15 @@ Suggests:
     knitr,
     msigdb,
     patchwork,
+    plaid,
     rmarkdown,
     rlang,
+    S4Vectors,
     scran,
     SeuratObject,
     Seurat,
     SingleCellExperiment,
+    SpatialExperiment,
     spelling,
     stringr,
     testthat (>= 3.0.0),
@@ -55,3 +58,4 @@ Suggests:
 VignetteBuilder: knitr
 Language: en-US
 BugReports: https://github.com/BorchLab/escape/issues
+Config/roxygen2/version: 8.0.0
