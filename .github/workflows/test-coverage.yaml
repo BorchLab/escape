@@ -23,8 +23,20 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr
+          extra-packages: any::covr, any::remotes, any::BiocManager
           needs: coverage
+
+      - name: Add GSVA repo
+        run: Rscript -e 'remotes::install_github("rcastelo/GSVA@c9fb985eb555f06a4195260b902747fe0a1ade9f")'
+
+      # plaid is Bioconductor 3.23 (devel) only, so BiocManager will not resolve
+      # it on the R release runner. Fall back to source so the plaid backend
+      # tests execute rather than skip. Note the GitHub HEAD may lag Bioconductor.
+      - name: Install plaid
+        run: Rscript -e 'if (!requireNamespace("plaid", quietly = TRUE)) tryCatch(BiocManager::install("plaid", ask = FALSE, update = FALSE), error = function(e) NULL)' -e 'if (!requireNamespace("plaid", quietly = TRUE)) remotes::install_github("bigomics/plaid", upgrade = "never")'
+
+      - name: Install SpatialExperiment
+        run: Rscript -e 'if (!requireNamespace("SpatialExperiment", quietly = TRUE)) BiocManager::install("SpatialExperiment", ask = FALSE, update = FALSE)'
 
       # This step is corrected to use the right functions
       - name: Test coverage and generate report
