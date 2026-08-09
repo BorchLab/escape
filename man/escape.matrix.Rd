@@ -15,13 +15,17 @@ escape.matrix(
   min.expr.cells = 0,
   min.filter.by = NULL,
   BPPARAM = NULL,
-  ...
+  ...,
+  backend = c("native", "plaid"),
+  backend.args = list(),
+  input.assay = "auto"
 )
 }
 \arguments{
 \item{input.data}{A raw-counts matrix (genes x cells), a
 \link[SeuratObject]{Seurat} object, or a
-\link[SingleCellExperiment]{SingleCellExperiment}. Gene identifiers must
+\link[SingleCellExperiment]{SingleCellExperiment} (including a
+\link[SpatialExperiment]{SpatialExperiment}). Gene identifiers must
 match those in \code{gene.sets}.}
 
 \item{gene.sets}{A named list of character vectors, the result of
@@ -30,11 +34,17 @@ match those in \code{gene.sets}.}
 result.}
 
 \item{method}{Character. Scoring algorithm (case-insensitive). One of
-\code{"GSVA"}, \code{"ssGSEA"}, \code{"UCell"}, or \code{"AUCell"}.
-Default is \code{"ssGSEA"}.}
+\code{"GSVA"}, \code{"ssGSEA"}, \code{"UCell"}, \code{"AUCell"},
+\code{"PLAID"}, \code{"singscore"}, or \code{"scSE"}. The last three are
+available only through \code{backend = "plaid"} and select it
+automatically. Default is \code{"ssGSEA"}.}
 
 \item{groups}{Integer. Number of cells per processing chunk. Larger values
-reduce overhead but increase memory usage. Default is \code{1000}.}
+reduce overhead but increase memory usage. Default is \code{1000}.
+Meaning depends on the backend: chunk size for the \pkg{BiocParallel} loop
+when \code{backend = "native"}, forwarded to \code{plaid::plaid(chunk=)}
+for \code{method = "PLAID"}, and ignored for the \code{replaid.*} paths
+(use \code{backend.args$chunk} there).}
 
 \item{min.size}{Integer or \code{NULL}. Minimum number of genes from a set
 that must be detected in the expression matrix for that set to be scored.
@@ -59,9 +69,30 @@ which the \code{min.expr.cells} rule is applied. Default is \code{NULL}.}
 \item{BPPARAM}{A \pkg{BiocParallel} parameter object describing the
 parallel backend. Default is \code{NULL} (serial execution).}
 
-\item{...}{Extra arguments passed verbatim to the chosen back-end scoring
+\item{...}{Extra arguments passed verbatim to the chosen native scoring
 function (\code{gsva()}, \code{ScoreSignatures_UCell()}, or
-\code{AUCell_calcAUC()}).}
+\code{AUCell_calcAUC()}). Not forwarded when \code{backend = "plaid"} -
+use \code{backend.args} there.}
+
+\item{backend}{Character. Scoring engine, \code{"native"} (default) or
+\code{"plaid"}. Ignored for methods that only exist in \pkg{plaid}.}
+
+\item{backend.args}{Named list of method-specific tuning arguments passed to
+the underlying \pkg{plaid} function, e.g. \code{alpha}, \code{tau},
+\code{rowtf}, \code{aucMaxRank}, \code{rmax}, \code{nsmooth},
+\code{stats}, \code{chunk}, \code{removeLog2}, \code{scoreMean}. Names are
+validated against the target function. Note that
+\code{backend.args$normalize} is \pkg{plaid}'s median normalization of the
+scores and is unrelated to escape's \code{normalize} argument. Default is
+\code{list()}.}
+
+\item{input.assay}{Character. Which expression matrix to score.
+\code{"auto"} (default) reads raw counts for the native backend and
+log-normalized values for \pkg{plaid}. \code{"counts"} and
+\code{"logcounts"} map to the right layer for both \pkg{Seurat}
+(\code{counts} / \code{data}) and \pkg{SummarizedExperiment}-derived
+objects, including \link[SpatialExperiment]{SpatialExperiment}. Any other
+string is taken literally.}
 }
 \value{
 A numeric matrix with one row per cell and one column per gene set,
@@ -83,7 +114,50 @@ lazily, keeping them in the package's \strong{Suggests} field.
   \item{\code{"ssGSEA"}}{Single-sample GSEA.}
   \item{\code{"UCell"}}{Rank-based UCell scoring.}
   \item{\code{"AUCell"}}{Area-under-the-curve ranking score.}
+  \item{\code{"PLAID"}}{Average log-intensity of set members (plaid only).}
+  \item{\code{"singscore"}}{Rank-based singscore (plaid only).}
+  \item{\code{"scSE"}}{Single-cell signature explorer score (plaid only).}
 }
+}
+
+\section{Backends}{
+
+The first four methods run on escape's own engines by default
+(\code{backend = "native"}). Setting \code{backend = "plaid"} routes them to
+\pkg{plaid}'s \code{replaid.*} family instead, which is substantially faster
+and lighter on memory for large objects. \code{"PLAID"}, \code{"singscore"}
+and \code{"scSE"} have no native implementation and always use \pkg{plaid}.
+
+\strong{The plaid backend approximates rather than reproduces, and the gap is
+wider than the plaid documentation suggests.} On a simulated 2000-gene,
+120-cell matrix, pooled Pearson correlation between the native and plaid
+scores for the same method was roughly 0.85 (\code{ssGSEA}), 0.83
+(\code{UCell}, \code{AUCell}) and 0.73 (\code{GSVA}); on the 230-gene
+\code{pbmc_small} it was lower still. The scores are also on different
+scales, not just noisier. Notably \code{replaid.ssgsea} is documented as
+exact at \code{alpha = 0}, but compared directly against
+\code{GSVA::gsva()} on identical input it correlated at 0.85, not 1. The
+input assay is not the cause - these are rank-based scores, and counts
+versus logcounts correlate at exactly 1.
+
+Treat \code{backend = "plaid"} as a fast screen, not as a drop-in
+replacement. Do not mix backends within an analysis, and do not compare
+plaid scores against previously published \pkg{escape} results. Tuning that
+may narrow the gap for individual methods:
+\describe{
+  \item{\code{ssGSEA}}{\code{backend.args = list(alpha = 0)}.}
+  \item{\code{GSVA}}{the empirical CDF row transform is approximated by a
+    z-transform (\code{rowtf = "z"}); pass
+    \code{backend.args = list(rowtf = "ecdf")} for the slower exact form.}
+  \item{\code{UCell}}{\code{backend.args = list(rmax = ...)} shifts the score
+    scale but did not change rank agreement in testing.}
+  \item{\code{scSE}}{plaid documents a match to the original with
+    \code{backend.args = list(removeLog2 = TRUE, scoreMean = FALSE)}.}
+}
+
+Users of the plaid backend should cite Zito \emph{et al.}, \emph{Bioinformatics}
+2025, 41(12):btaf621 in addition to the original method paper and
+\pkg{escape}.
 }
 
 \examples{

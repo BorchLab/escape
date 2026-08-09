@@ -21,8 +21,17 @@ Single-cell sequencing (SCS) is a fundamental technology in investigating a dive
 * Single-sample Gene Set Enrichment Analysis (ssGSEA) - [citation](https://pubmed.ncbi.nlm.nih.gov/19847166/)
 * AUCell - [citation](https://pubmed.ncbi.nlm.nih.gov/28991892/)
 * UCell -[citation](https://pubmed.ncbi.nlm.nih.gov/34285779/) 
+* PLAID, singscore and scSE via the optional [plaid](https://bigomics.github.io/plaid/) backend ([source](https://github.com/bigomics/plaid), [citation](https://pubmed.ncbi.nlm.nih.gov/41223139/))
 
 More information on each method is available in the *escape* manual for ```escape.matrix()``` and the citation links. If using these methods, users should cite the original works as well.
+
+#### Backends
+
+Setting ```backend = "plaid"``` reroutes GSVA, ssGSEA, AUCell and UCell through *plaid*, which is faster and lighter on memory for large objects (4.2x on a 166,000-spot Xenium object). These are approximations rather than exact reproductions, and measured agreement with the native scores is lower than *plaid*'s own documentation suggests - see the vignette before substituting one backend for the other. The default backend remains ```"native"```.
+
+#### Object types
+
+Raw count matrices, [Seurat](https://satijalab.org/seurat/), [SingleCellExperiment](https://bioconductor.org/books/release/OSCA/book-contents.html#basics), and [SpatialExperiment](https://bioconductor.org/packages/SpatialExperiment/) objects are all supported. For spatial objects, ```runEscape()``` attaches scores as an altExp and leaves ```spatialCoords()```, ```imgData()``` and ```sample_id``` untouched.
 
 ### Installation
 
